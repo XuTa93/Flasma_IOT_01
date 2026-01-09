@@ -1,0 +1,258 @@
+using Flasma_IOT_01.Core.Models;
+using Flasma_IOT_01.Core.Services;
+
+namespace Flasma_IOT_01.Core.Controllers;
+
+/// <summary>
+/// Measurement controller that coordinates Start/Stop operations and events
+/// </summary>
+public class MeasurementController
+{
+    private readonly ModbusTcpClient _modbusClient;
+    private readonly DataSampler _dataSampler;
+    private readonly InMemoryDataRepository _dataRepository;
+    private readonly ExcelReportExporter _reportExporter;
+    private ModbusConnectionSettings? _modbusSettings;
+    private CancellationTokenSource? _backgroundReadCts;
+    private Task? _backgroundReadTask;
+    private double _lastVoltage = 0;
+    private double _lastCurrent = 0;
+    private bool _isMeasuring = false;
+    private int _reconnectAttempts = 0;
+    private const int MaxReconnectAttempts = 10;
+    private const int InitialRetryDelayMs = 1000;
+
+    public event EventHandler? MeasurementStarted;
+    public event EventHandler? MeasurementStopped;
+    public event EventHandler<string>? ErrorOccurred;
+    public event EventHandler<NewDataReadEventArgs>? NewDataRead;
+
+    public MeasurementController(
+        ModbusTcpClient modbusClient,
+        DataSampler dataSampler,
+        InMemoryDataRepository dataRepository,
+        ExcelReportExporter reportExporter)
+    {
+        _modbusClient = modbusClient ?? throw new ArgumentNullException(nameof(modbusClient));
+        _dataSampler = dataSampler ?? throw new ArgumentNullException(nameof(dataSampler));
+        _dataRepository = dataRepository ?? throw new ArgumentNullException(nameof(dataRepository));
+        _reportExporter = reportExporter ?? throw new ArgumentNullException(nameof(reportExporter));
+
+        _dataSampler.DataSampled += OnDataSampled;
+    }
+
+    /// <summary>
+    /// Start continuous background reading from Modbus
+    /// </summary>
+    public async Task StartBackgroundReadAsync(ModbusConnectionSettings modbusSettings)
+    {
+        if (_backgroundReadTask != null && !_backgroundReadTask.IsCompleted)
+            return;
+
+        try
+        {
+            _modbusSettings = modbusSettings ?? throw new ArgumentNullException(nameof(modbusSettings));
+            _backgroundReadCts = new CancellationTokenSource();
+            _reconnectAttempts = 0;
+
+            await _modbusClient.ConnectAsync(modbusSettings.IpAddress, modbusSettings.Port);
+            _dataSampler.Start(modbusSettings.SamplingIntervalMs);
+
+            _backgroundReadTask = BackgroundReadLoopAsync(_backgroundReadCts.Token);
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Background read failed: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Stop continuous background reading from Modbus
+    /// </summary>
+    public async Task StopBackgroundReadAsync()
+    {
+        try
+        {
+            _dataSampler.Stop();
+            _backgroundReadCts?.Cancel();
+            if (_backgroundReadTask != null)
+                await _backgroundReadTask;
+            
+            await _modbusClient.DisconnectAsync();
+            _reconnectAttempts = 0;
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Background read stop failed: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            _backgroundReadCts?.Dispose();
+            _backgroundReadCts = null;
+            _backgroundReadTask = null;
+        }
+    }
+
+    /// <summary>
+    /// Start collecting measurement data from pre-read buffer
+    /// </summary>
+    public async Task StartMeasurementAsync()
+    {
+        try
+        {
+            _isMeasuring = true;
+            MeasurementStarted?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Stop collecting measurement data
+    /// </summary>
+    public async Task StopMeasurementAsync()
+    {
+        try
+        {
+            _isMeasuring = false;
+            MeasurementStopped?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Background loop that continuously reads from Modbus
+    /// </summary>
+    private async Task BackgroundReadLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(100, cancellationToken);
+
+                if (_modbusSettings == null)
+                    continue;
+
+                // Check connection and attempt to reconnect if needed
+                if (!_modbusClient.IsConnected)
+                {
+                    await AttemptReconnectAsync();
+                    continue;
+                }
+
+                // Reset reconnect attempts on successful connection
+                _reconnectAttempts = 0;
+
+                try
+                {
+                    _lastVoltage = await ReadVoltageAsync(_modbusSettings);
+                    _lastCurrent = await ReadCurrentAsync(_modbusSettings);
+                    
+                    // Invoke the NewDataRead event
+                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
+                }
+                catch (Exception ex)
+                {
+                    ErrorOccurred?.Invoke(this, $"Background read error: {ex.Message}");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when stopping
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Background read fatal error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Called by DataSampler to collect current readings into repository
+    /// </summary>
+    private async void OnDataSampled(object? sender, EventArgs e)
+    {
+        try
+        {
+            if (!_isMeasuring)
+                return;
+
+            var measurement = new Measurement(_lastVoltage, _lastCurrent);
+            _dataRepository.AddMeasurement(measurement);
+            NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, ex.Message);
+        }
+    }
+
+    private async Task AttemptReconnectAsync()
+    {
+        if (_modbusSettings == null || _reconnectAttempts >= MaxReconnectAttempts)
+            return;
+
+        try
+        {
+            _reconnectAttempts++;
+            int delayMs = (int)(InitialRetryDelayMs * Math.Pow(2, _reconnectAttempts - 1));
+            await Task.Delay(delayMs);
+
+            await _modbusClient.ConnectAsync(_modbusSettings.IpAddress, _modbusSettings.Port);
+            _reconnectAttempts = 0;
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Reconnection attempt {_reconnectAttempts} failed: {ex.Message}");
+        }
+    }
+
+    private async Task<double> ReadVoltageAsync(ModbusConnectionSettings settings)
+    {
+        var registers = await _modbusClient.ReadHoldingRegistersAsync(
+            settings.VoltageRegisterAddress, 1);
+
+        return registers.Length > 0 ? registers[0] : 0;
+    }
+
+    private async Task<double> ReadCurrentAsync(ModbusConnectionSettings settings)
+    {
+        var registers = await _modbusClient.ReadHoldingRegistersAsync(
+            settings.CurrentRegisterAddress, 1);
+
+        return registers.Length > 0 ? registers[0] : 0;
+    }
+
+    public IEnumerable<Measurement> GetAllMeasurements()
+    {
+        return _dataRepository.GetAllMeasurements();
+    }
+
+    public void ClearMeasurements()
+    {
+        _dataRepository.Clear();
+    }
+
+    public async Task ExportToExcelAsync(string filePath)
+    {
+        var measurements = _dataRepository.GetAllMeasurements();
+        await _reportExporter.ExportToExcelAsync(filePath, measurements);
+    }
+
+    public async Task ExportToCsvAsync(string filePath)
+    {
+        var measurements = _dataRepository.GetAllMeasurements();
+        await _reportExporter.ExportToCsvAsync(filePath, measurements);
+    }
+}
+

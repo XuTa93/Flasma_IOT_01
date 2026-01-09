@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Flasma_IOT_01.Core/Flasma_IOT_01.Core.csproj" />
+  <Project Path="Flasma_IOT_01.UI/Flasma_IOT_01.UI.csproj" Id="2a13b690-d47b-4c36-8b71-9009f7b37bb1" />
+</Solution>
