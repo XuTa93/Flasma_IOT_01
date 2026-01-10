@@ -36,9 +36,12 @@
             panel1 = new Panel();
             BtnDisConnect = new Button();
             btnConnect = new Button();
+            btnTestData = new Button();
             lblCurrentAmpe = new Label();
             lblCurentVolt = new Label();
-            btnTestData = new Button();
+            Chart_Current = new ScottPlot.WinForms.FormsPlot();
+            Chart_Volt = new ScottPlot.WinForms.FormsPlot();
+            chkDummyMode = new CheckBox();
             panel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -101,6 +104,7 @@
             panel1.Controls.Add(label2);
             panel1.Controls.Add(lblCurentVolt);
             panel1.Controls.Add(label1);
+            panel1.Controls.Add(chkDummyMode);
             panel1.Dock = DockStyle.Right;
             panel1.Location = new Point(970, 0);
             panel1.Name = "panel1";
@@ -127,6 +131,16 @@
             btnConnect.UseVisualStyleBackColor = true;
             btnConnect.Click += btnConnect_Click;
             // 
+            // btnTestData
+            // 
+            btnTestData.Location = new Point(41, 170);
+            btnTestData.Name = "btnTestData";
+            btnTestData.Size = new Size(131, 40);
+            btnTestData.TabIndex = 1;
+            btnTestData.Text = "Get Data";
+            btnTestData.UseVisualStyleBackColor = true;
+            btnTestData.Click += btnTestData_Click;
+            // 
             // lblCurrentAmpe
             // 
             lblCurrentAmpe.AutoSize = true;
@@ -145,21 +159,40 @@
             lblCurentVolt.TabIndex = 2;
             lblCurentVolt.Text = "------";
             // 
-            // btnTestData
+            // chkDummyMode
             // 
-            btnTestData.Location = new Point(41, 170);
-            btnTestData.Name = "btnTestData";
-            btnTestData.Size = new Size(131, 40);
-            btnTestData.TabIndex = 1;
-            btnTestData.Text = "Get Data";
-            btnTestData.UseVisualStyleBackColor = true;
-            btnTestData.Click += btnTestData_Click;
+            chkDummyMode.AutoSize = true;
+            chkDummyMode.Location = new Point(41, 600);
+            chkDummyMode.Name = "chkDummyMode";
+            chkDummyMode.Size = new Size(200, 30);
+            chkDummyMode.TabIndex = 7;
+            chkDummyMode.Text = "Dummy Mode (Test)";
+            chkDummyMode.UseVisualStyleBackColor = true;
+            chkDummyMode.CheckedChanged += chkDummyMode_CheckedChanged;
+            // 
+            // Chart_Current
+            // 
+            Chart_Current.DisplayScale = 1.75F;
+            Chart_Current.Location = new Point(12, 36);
+            Chart_Current.Name = "Chart_Current";
+            Chart_Current.Size = new Size(934, 374);
+            Chart_Current.TabIndex = 5;
+            // 
+            // Chart_Volt
+            // 
+            Chart_Volt.DisplayScale = 1.75F;
+            Chart_Volt.Location = new Point(43, 448);
+            Chart_Volt.Name = "Chart_Volt";
+            Chart_Volt.Size = new Size(903, 356);
+            Chart_Volt.TabIndex = 6;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1276, 816);
+            Controls.Add(Chart_Volt);
+            Controls.Add(Chart_Current);
             Controls.Add(panel1);
             Name = "MainForm";
             Text = "Main Form";
@@ -181,5 +214,8 @@
         private Label lblCurentVolt;
         private Button BtnDisConnect;
         private Button btnTestData;
+        private ScottPlot.WinForms.FormsPlot Chart_Current;
+        private ScottPlot.WinForms.FormsPlot Chart_Volt;
+        private CheckBox chkDummyMode;
     }
 }

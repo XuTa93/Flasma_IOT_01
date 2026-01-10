@@ -12,12 +12,14 @@ public class MeasurementController
     private readonly DataSampler _dataSampler;
     private readonly InMemoryDataRepository _dataRepository;
     private readonly ExcelReportExporter _reportExporter;
+    private readonly DummyDataGenerator _dummyDataGenerator;
     private ModbusConnectionSettings? _modbusSettings;
     private CancellationTokenSource? _backgroundReadCts;
     private Task? _backgroundReadTask;
     private double _lastVoltage = 0;
     private double _lastCurrent = 0;
     private bool _isMeasuring = false;
+    private bool _isDummyMode = false;
     private int _reconnectAttempts = 0;
     private bool _lastReportedConnectionState = false;
     private const int MaxReconnectAttempts = 10;
@@ -30,6 +32,7 @@ public class MeasurementController
     public event EventHandler<bool>? ConnectionStatusChanged;
 
     public bool IsModbusConnected => _modbusClient.IsConnected;
+    public bool IsDummyMode => _isDummyMode;
 
     public MeasurementController(
         ModbusTcpClient modbusClient,
@@ -41,8 +44,105 @@ public class MeasurementController
         _dataSampler = dataSampler ?? throw new ArgumentNullException(nameof(dataSampler));
         _dataRepository = dataRepository ?? throw new ArgumentNullException(nameof(dataRepository));
         _reportExporter = reportExporter ?? throw new ArgumentNullException(nameof(reportExporter));
+        _dummyDataGenerator = new DummyDataGenerator();
 
         _dataSampler.DataSampled += OnDataSampled;
+    }
+
+    /// <summary>
+    /// Start dummy data mode for testing without Modbus connection
+    /// </summary>
+    public async Task StartDummyModeAsync(int samplingIntervalMs = 1000)
+    {
+        if (_backgroundReadTask != null && !_backgroundReadTask.IsCompleted)
+            return;
+
+        try
+        {
+            _isDummyMode = true;
+            _dummyDataGenerator.Reset();
+            _backgroundReadCts = new CancellationTokenSource();
+            _reconnectAttempts = 0;
+
+            _modbusSettings = new ModbusConnectionSettings
+            {
+                SamplingIntervalMs = samplingIntervalMs
+            };
+
+            _dataSampler.Start(samplingIntervalMs);
+            NotifyConnectionStatusChangedIfNeeded(true); // Simulate connected state
+
+            _backgroundReadTask = DummyDataLoopAsync(_backgroundReadCts.Token);
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Dummy mode start failed: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Stop dummy data mode
+    /// </summary>
+    public async Task StopDummyModeAsync()
+    {
+        try
+        {
+            _dataSampler.Stop();
+            _backgroundReadCts?.Cancel();
+            if (_backgroundReadTask != null)
+                await _backgroundReadTask;
+
+            _isDummyMode = false;
+            _reconnectAttempts = 0;
+            NotifyConnectionStatusChangedIfNeeded(false);
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Dummy mode stop failed: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            _backgroundReadCts?.Dispose();
+            _backgroundReadCts = null;
+            _backgroundReadTask = null;
+        }
+    }
+
+    /// <summary>
+    /// Dummy data generation loop
+    /// </summary>
+    private async Task DummyDataLoopAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(100, cancellationToken);
+
+                try
+                {
+                    _lastVoltage = _dummyDataGenerator.GenerateVoltage();
+                    _lastCurrent = _dummyDataGenerator.GenerateCurrent();
+
+                    // Invoke the NewDataRead event
+                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
+                }
+                catch (Exception ex)
+                {
+                    ErrorOccurred?.Invoke(this, $"Dummy data generation error: {ex.Message}");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when stopping
+        }
+        catch (Exception ex)
+        {
+            ErrorOccurred?.Invoke(this, $"Dummy mode fatal error: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -55,6 +155,7 @@ public class MeasurementController
 
         try
         {
+            _isDummyMode = false;
             _modbusSettings = modbusSettings ?? throw new ArgumentNullException(nameof(modbusSettings));
             _backgroundReadCts = new CancellationTokenSource();
             _reconnectAttempts = 0;
@@ -152,14 +253,12 @@ public class MeasurementController
                 if (_modbusSettings == null)
                     continue;
 
-                // Check connection and attempt to reconnect if needed
                 if (!_modbusClient.IsConnected)
                 {
                     await AttemptReconnectAsync();
                     continue;
                 }
 
-                // Reset reconnect attempts on successful connection
                 _reconnectAttempts = 0;
 
                 try
@@ -167,7 +266,6 @@ public class MeasurementController
                     _lastVoltage = await ReadVoltageAsync(_modbusSettings);
                     _lastCurrent = await ReadCurrentAsync(_modbusSettings);
 
-                    // Invoke the NewDataRead event
                     NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
                 }
                 catch (Exception ex)
@@ -178,7 +276,6 @@ public class MeasurementController
         }
         catch (OperationCanceledException)
         {
-            // Expected when stopping
         }
         catch (Exception ex)
         {
@@ -228,6 +325,15 @@ public class MeasurementController
         }
     }
 
+    private void NotifyConnectionStatusChangedIfNeeded(bool isConnected)
+    {
+        if (isConnected == _lastReportedConnectionState)
+            return;
+
+        _lastReportedConnectionState = isConnected;
+        ConnectionStatusChanged?.Invoke(this, isConnected);
+    }
+
     private async Task<double> ReadVoltageAsync(ModbusConnectionSettings settings)
     {
         var registers = await _modbusClient.ReadHoldingRegistersAsync(
@@ -264,19 +370,6 @@ public class MeasurementController
     {
         var measurements = _dataRepository.GetAllMeasurements();
         await _reportExporter.ExportToCsvAsync(filePath, measurements);
-    }
-
-    /// <summary>
-    /// Thông báo khi trạng thái kết nối thay đổi
-    /// </summary>
-    /// <param name="isConnected"></param>
-    private void NotifyConnectionStatusChangedIfNeeded(bool isConnected)
-    {
-        if (isConnected == _lastReportedConnectionState)
-            return;
-
-        _lastReportedConnectionState = isConnected;
-        ConnectionStatusChanged?.Invoke(this, isConnected);
     }
 }
 
