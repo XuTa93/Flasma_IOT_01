@@ -1,4 +1,4 @@
-using Flasma_IOT_01.Core.Models;
+﻿using Flasma_IOT_01.Core.Models;
 using Flasma_IOT_01.Core.Services;
 
 namespace Flasma_IOT_01.Core.Controllers;
@@ -19,6 +19,7 @@ public class MeasurementController
     private double _lastCurrent = 0;
     private bool _isMeasuring = false;
     private int _reconnectAttempts = 0;
+    private bool _lastReportedConnectionState = false;
     private const int MaxReconnectAttempts = 10;
     private const int InitialRetryDelayMs = 1000;
 
@@ -26,6 +27,9 @@ public class MeasurementController
     public event EventHandler? MeasurementStopped;
     public event EventHandler<string>? ErrorOccurred;
     public event EventHandler<NewDataReadEventArgs>? NewDataRead;
+    public event EventHandler<bool>? ConnectionStatusChanged;
+
+    public bool IsModbusConnected => _modbusClient.IsConnected;
 
     public MeasurementController(
         ModbusTcpClient modbusClient,
@@ -56,6 +60,8 @@ public class MeasurementController
             _reconnectAttempts = 0;
 
             await _modbusClient.ConnectAsync(modbusSettings.IpAddress, modbusSettings.Port);
+            NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
+
             _dataSampler.Start(modbusSettings.SamplingIntervalMs);
 
             _backgroundReadTask = BackgroundReadLoopAsync(_backgroundReadCts.Token);
@@ -78,9 +84,10 @@ public class MeasurementController
             _backgroundReadCts?.Cancel();
             if (_backgroundReadTask != null)
                 await _backgroundReadTask;
-            
+
             await _modbusClient.DisconnectAsync();
             _reconnectAttempts = 0;
+            NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
         }
         catch (Exception ex)
         {
@@ -140,6 +147,8 @@ public class MeasurementController
             {
                 await Task.Delay(100, cancellationToken);
 
+                NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
+
                 if (_modbusSettings == null)
                     continue;
 
@@ -157,7 +166,7 @@ public class MeasurementController
                 {
                     _lastVoltage = await ReadVoltageAsync(_modbusSettings);
                     _lastCurrent = await ReadCurrentAsync(_modbusSettings);
-                    
+
                     // Invoke the NewDataRead event
                     NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
                 }
@@ -209,11 +218,13 @@ public class MeasurementController
             await Task.Delay(delayMs);
 
             await _modbusClient.ConnectAsync(_modbusSettings.IpAddress, _modbusSettings.Port);
+            NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
             _reconnectAttempts = 0;
         }
         catch (Exception ex)
         {
             ErrorOccurred?.Invoke(this, $"Reconnection attempt {_reconnectAttempts} failed: {ex.Message}");
+            NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
         }
     }
 
@@ -253,6 +264,19 @@ public class MeasurementController
     {
         var measurements = _dataRepository.GetAllMeasurements();
         await _reportExporter.ExportToCsvAsync(filePath, measurements);
+    }
+
+    /// <summary>
+    /// Thông báo khi trạng thái kết nối thay đổi
+    /// </summary>
+    /// <param name="isConnected"></param>
+    private void NotifyConnectionStatusChangedIfNeeded(bool isConnected)
+    {
+        if (isConnected == _lastReportedConnectionState)
+            return;
+
+        _lastReportedConnectionState = isConnected;
+        ConnectionStatusChanged?.Invoke(this, isConnected);
     }
 }
 

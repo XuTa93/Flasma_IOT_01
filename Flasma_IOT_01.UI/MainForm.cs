@@ -14,6 +14,7 @@ namespace Flasma_IOT_01.UI
         public MainForm()
         {
             InitializeComponent();
+            btnStart.Enabled = false;
             _modbusClient = new ModbusTcpClient();
             _dataSampler = new DataSampler();
             _reportExporter = new ExcelReportExporter();
@@ -29,11 +30,25 @@ namespace Flasma_IOT_01.UI
             _measurementController.ErrorOccurred += OnMeasurementControllerErrorOccurred;
             _measurementController.MeasurementStarted += OnMeasurementControllerMeasurementStarted;
             _measurementController.MeasurementStopped += OnMeasurementControllerMeasurementStopped;
+            _measurementController.ConnectionStatusChanged += _measurementController_ConnectionStatusChanged;
+        }
+
+        private void _measurementController_ConnectionStatusChanged(object? sender, bool e)
+        {
+            if (e == true)
+            {
+                btnStart.Enabled = true;
+                btnConnect.Enabled = false;
+            }
+            else
+            {
+                btnStart.Enabled = false;
+                btnConnect.Enabled = true;
+            }
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
         {
-            using var client = new ModbusTcpClient();
             var settings = new ModbusConnectionSettings
             {
                 IpAddress = "127.0.0.1",
