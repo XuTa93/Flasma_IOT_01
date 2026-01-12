@@ -172,6 +172,7 @@
             TxtBarcode.Name = "TxtBarcode";
             TxtBarcode.Size = new Size(287, 35);
             TxtBarcode.TabIndex = 8;
+            TxtBarcode.Text = "Code text";
             // 
             // BtnDisConnect
             // 

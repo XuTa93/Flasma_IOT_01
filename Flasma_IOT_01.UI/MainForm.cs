@@ -46,6 +46,7 @@ namespace Flasma_IOT_01.UI
             
             // Initialize history grid
             InitializeHistoryGrid();
+            chkDummyMode.Checked = true;
         }
 
         private void InitializeHistoryGrid()
@@ -128,6 +129,7 @@ namespace Flasma_IOT_01.UI
             Chart_Volt.Plot.YLabel("Voltage (V)");
             Chart_Volt.Plot.Axes.AutoScale();
             Chart_Volt.Refresh();
+
         }
 
         private void chkDummyMode_CheckedChanged(object sender, EventArgs e)
@@ -304,6 +306,9 @@ namespace Flasma_IOT_01.UI
 
             // Xuất CSV và tạo history record
             await ExportDataAndCreateHistoryAsync();
+
+            // Chuyển sang tab History sau khi xử lý xong
+            tabControl1.SelectedIndex = 0; // Index 0 là tabPage1 (History)
         }
 
         private async Task ExportDataAndCreateHistoryAsync()
@@ -364,6 +369,9 @@ namespace Flasma_IOT_01.UI
 
             Chart_Volt.Plot.Clear();
             Chart_Volt.Refresh();
+
+            // Chuyển sang tab Chart
+            tabControl1.SelectedIndex = 1; // Index 1 là tabPage2 (Chart)
 
             _measurementController.StartMeasurementAsync();
         }
