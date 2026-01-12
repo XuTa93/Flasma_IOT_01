@@ -12,6 +12,7 @@ namespace Flasma_IOT_01.UI
         private readonly DataSampler _dataSampler;
         private readonly InMemoryDataRepository _dataRepository;
         private readonly ExcelReportExporter _reportExporter;
+        private readonly MeasurementHistoryRepository _historyRepository;
 
         private bool _isRecording = false;
         private int _lastMeasurementCount = 0;
@@ -25,11 +26,13 @@ namespace Flasma_IOT_01.UI
             _dataSampler = new DataSampler();
             _reportExporter = new ExcelReportExporter();
             _dataRepository = new InMemoryDataRepository();
+            _historyRepository = new MeasurementHistoryRepository();
             _measurementController = new MeasurementController(
                 _modbusClient,
                 _dataSampler,
                 _dataRepository,
-                _reportExporter);
+                _reportExporter,
+                _historyRepository);
 
             // Subscribe to the NewDataRead event
             _measurementController.NewDataRead += OnMeasurementControllerNewDataRead;
@@ -40,6 +43,74 @@ namespace Flasma_IOT_01.UI
 
             // Initialize charts
             InitializeCharts();
+            
+            // Initialize history grid
+            InitializeHistoryGrid();
+        }
+
+        private void InitializeHistoryGrid()
+        {
+            dgvHistory.Columns.Add("Id", "ID");
+            dgvHistory.Columns.Add("StartTime", "Start Time");
+            dgvHistory.Columns.Add("EndTime", "End Time");
+            dgvHistory.Columns.Add("Duration", "Duration");
+            dgvHistory.Columns.Add("Barcode", "Barcode");
+            dgvHistory.Columns.Add("Result", "Result");
+            dgvHistory.Columns.Add("AverageVoltage", "Avg Voltage (V)");
+            dgvHistory.Columns.Add("AverageCurrent", "Avg Current (A)");
+            dgvHistory.Columns.Add("FilePath", "File Path");
+
+            // Set column widths
+            dgvHistory.Columns["Id"].Width = 50;
+            dgvHistory.Columns["StartTime"].Width = 150;
+            dgvHistory.Columns["EndTime"].Width = 150;
+            dgvHistory.Columns["Duration"].Width = 100;
+            dgvHistory.Columns["Barcode"].Width = 120;
+            dgvHistory.Columns["Result"].Width = 60;
+            dgvHistory.Columns["AverageVoltage"].Width = 120;
+            dgvHistory.Columns["AverageCurrent"].Width = 120;
+
+            // Style for Result column
+            dgvHistory.CellFormatting += DgvHistory_CellFormatting;
+        }
+
+        private void DgvHistory_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (dgvHistory.Columns[e.ColumnIndex].Name == "Result" && e.Value != null)
+            {
+                var result = e.Value.ToString();
+                if (result == "OK")
+                {
+                    e.CellStyle.BackColor = System.Drawing.Color.LightGreen;
+                    e.CellStyle.ForeColor = System.Drawing.Color.DarkGreen;
+                }
+                else if (result == "NG")
+                {
+                    e.CellStyle.BackColor = System.Drawing.Color.LightCoral;
+                    e.CellStyle.ForeColor = System.Drawing.Color.DarkRed;
+                }
+            }
+        }
+
+        private void RefreshHistoryGrid()
+        {
+            dgvHistory.Rows.Clear();
+            var histories = _measurementController.GetAllHistory();
+
+            foreach (var history in histories)
+            {
+                dgvHistory.Rows.Add(
+                    history.Id,
+                    history.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    history.EndTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    history.Duration.ToString(@"hh\:mm\:ss"),
+                    history.Barcode,
+                    history.Result,
+                    history.AverageVoltage.ToString("F2"),
+                    history.AverageCurrent.ToString("F2"),
+                    Path.GetFileName(history.FilePath)
+                );
+            }
         }
 
         private void InitializeCharts()
@@ -85,7 +156,7 @@ namespace Flasma_IOT_01.UI
                 return;
             }
 
-            if (!chkDummyMode.Checked) // Only update if not in dummy mode
+            if (!chkDummyMode.Checked)
             {
                 if (e == true)
                 {
@@ -231,25 +302,40 @@ namespace Flasma_IOT_01.UI
 
             MessageBox.Show("Measurement Stopped", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            // Xuất CSV nếu có dữ liệu (gọi đến Core layer)
-            await ExportDataToCsvAsync();
+            // Xuất CSV và tạo history record
+            await ExportDataAndCreateHistoryAsync();
         }
 
-        private async Task ExportDataToCsvAsync()
+        private async Task ExportDataAndCreateHistoryAsync()
         {
             try
             {
-                // Gọi MeasurementController để export CSV
-                await _measurementController.ExportToCsvAsync(_reportExporter.GenerateDefaultFilePath());
+                // Generate file path
+                var filePath = _reportExporter.GenerateDefaultFilePath();
+                
+                // Export CSV
+                await _measurementController.ExportToCsvAsync(filePath);
 
-                MessageBox.Show("Data exported successfully!",
+                // Create history record (now async)
+                var barcode = string.IsNullOrWhiteSpace(TxtBarcode.Text) ? "N/A" : TxtBarcode.Text.Trim();
+                var history = await _measurementController.CreateHistoryRecordAsync(barcode, filePath);
+
+                // Refresh history grid
+                RefreshHistoryGrid();
+
+                // Clear barcode textbox for next measurement
+                TxtBarcode.Clear();
+
+                // Show storage location
+                var historyFilePath = _historyRepository.GetStorageFilePath();
+                MessageBox.Show($"Data exported and history saved!\nResult: {history.Result}\n\nHistory stored at:\n{historyFilePath}",
                     "Export Success",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    history.Result == "OK" ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("No measurements"))
             {
-                // Không có dữ liệu, không hiển thị lỗi
+                // Không có dữ liệu, không lưu history
             }
             catch (Exception ex)
             {

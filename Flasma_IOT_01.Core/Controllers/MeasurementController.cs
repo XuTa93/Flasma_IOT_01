@@ -25,6 +25,9 @@ public class MeasurementController
     private const int MaxReconnectAttempts = 10;
     private const int InitialRetryDelayMs = 1000;
 
+    private DateTime _measurementStartTime;
+    private readonly MeasurementHistoryRepository _historyRepository;
+
     public event EventHandler? MeasurementStarted;
     public event EventHandler? MeasurementStopped;
     public event EventHandler<string>? ErrorOccurred;
@@ -38,12 +41,14 @@ public class MeasurementController
         ModbusTcpClient modbusClient,
         DataSampler dataSampler,
         InMemoryDataRepository dataRepository,
-        ExcelReportExporter reportExporter)
+        ExcelReportExporter reportExporter,
+        MeasurementHistoryRepository historyRepository)
     {
         _modbusClient = modbusClient ?? throw new ArgumentNullException(nameof(modbusClient));
         _dataSampler = dataSampler ?? throw new ArgumentNullException(nameof(dataSampler));
         _dataRepository = dataRepository ?? throw new ArgumentNullException(nameof(dataRepository));
         _reportExporter = reportExporter ?? throw new ArgumentNullException(nameof(reportExporter));
+        _historyRepository = historyRepository ?? throw new ArgumentNullException(nameof(historyRepository));
         _dummyDataGenerator = new DummyDataGenerator();
 
         _dataSampler.DataSampled += OnDataSampled;
@@ -210,6 +215,7 @@ public class MeasurementController
     {
         try
         {
+            _measurementStartTime = DateTime.Now;
             _isMeasuring = true;
             MeasurementStarted?.Invoke(this, EventArgs.Empty);
         }
@@ -370,6 +376,43 @@ public class MeasurementController
     {
         var measurements = _dataRepository.GetAllMeasurements();
         await _reportExporter.ExportToCsvAsync(filePath, measurements);
+    }
+
+    /// <summary>
+    /// Create a history record for the measurement
+    /// </summary>
+    public async Task<MeasurementHistory> CreateHistoryRecordAsync(string barcode, string csvFilePath)
+    {
+        var measurements = _dataRepository.GetAllMeasurements().ToList();
+        var endTime = DateTime.Now;
+        
+        // Calculate statistics
+        var avgVoltage = measurements.Any() ? measurements.Average(m => m.Voltage) : 0;
+        var avgCurrent = measurements.Any() ? measurements.Average(m => m.Current) : 0;
+        
+        // TODO: Implement actual OK/NG logic based on chart analysis
+        // For now, use random as placeholder
+        var random = new Random();
+        var result = random.Next(0, 2) == 0 ? "OK" : "NG";
+        
+        var history = new MeasurementHistory(
+            _measurementStartTime,
+            endTime,
+            barcode,
+            result,
+            measurements.Count,
+            avgVoltage,
+            avgCurrent,
+            csvFilePath
+        );
+        
+        await _historyRepository.AddHistoryAsync(history);
+        return history;
+    }
+
+    public IEnumerable<MeasurementHistory> GetAllHistory()
+    {
+        return _historyRepository.GetAllHistory();
     }
 }
 
