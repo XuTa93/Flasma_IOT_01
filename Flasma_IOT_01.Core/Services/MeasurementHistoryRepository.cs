@@ -16,35 +16,13 @@ public class MeasurementHistoryRepository
     public MeasurementHistoryRepository()
     {
         _csvStorage = new CsvHistoryStorage();
-        LoadHistoryFromStorage();
     }
 
     public MeasurementHistoryRepository(CsvHistoryStorage csvStorage)
     {
         _csvStorage = csvStorage ?? throw new ArgumentNullException(nameof(csvStorage));
-        LoadHistoryFromStorage();
     }
 
-    /// <summary>
-    /// Load history from CSV storage
-    /// </summary>
-    private void LoadHistoryFromStorage()
-    {
-        try
-        {
-            var histories = _csvStorage.LoadHistoryAsync().GetAwaiter().GetResult();
-            _history.AddRange(histories);
-            
-            if (_history.Any())
-            {
-                _nextId = _history.Max(h => h.Id) + 1;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to load history: {ex.Message}");
-        }
-    }
 
     public async Task AddHistoryAsync(MeasurementHistory history)
     {
