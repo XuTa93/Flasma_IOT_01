@@ -1,0 +1,149 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Flasma_IOT_01.ViewModels"
+        xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+        mc:Ignorable="d"
+        Width="1100"
+        Height="700"
+        x:Class="Flasma_IOT_01.Views.MainWindow"
+        Title="Flasma IOT"
+        x:DataType="vm:MainWindowViewModel">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- ================= TAB AREA ================= -->
+        <TabControl Grid.Row="0">
+
+            <!-- ================= HISTORY TAB ================= -->
+            <TabItem Header="History">
+                <Grid RowDefinitions="Auto,*">
+
+                    <!-- TABLE HEADER -->
+                    <Grid Grid.Row="0"
+                          ColumnDefinitions="50,100,130,130,100,120,80,120,200"
+                          Background="#EEEEEE"
+                          Height="40">
+                        <TextBlock Text="ID" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Start Time" Grid.Column="1" VerticalAlignment="Center"/>
+                        <TextBlock Text="End Time" Grid.Column="2" VerticalAlignment="Center"/>
+                        <TextBlock Text="Duration" Grid.Column="3" VerticalAlignment="Center"/>
+                        <TextBlock Text="Barcode" Grid.Column="4" VerticalAlignment="Center"/>
+                        <TextBlock Text="Result" Grid.Column="5" VerticalAlignment="Center"/>
+                        <TextBlock Text="Avg Voltage (V)" Grid.Column="6" VerticalAlignment="Center"/>
+                        <TextBlock Text="Avg Current (A)" Grid.Column="7" VerticalAlignment="Center"/>
+                        <TextBlock Text="File Path" Grid.Column="8" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- TABLE BODY -->
+                    <Border Grid.Row="1"
+                            Background="#B0B0B0"
+                            BorderBrush="Black"
+                            BorderThickness="1"/>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Chart">
+                <Border Background="#111"
+                        Padding="20">
+
+                    <Grid RowDefinitions="*,*"
+                          RowSpacing="20">
+
+                        <!-- VOLTAGE -->
+                        <Border Grid.Row="0"
+                                Background="#111"
+                                BorderBrush="#444"
+                                BorderThickness="1"
+                                Padding="10">
+
+                            <Grid RowDefinitions="Auto,*">
+                                <TextBlock Text="Voltage (V)"
+                                           Foreground="White"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8"/>
+
+                                <lvc:CartesianChart x:Name="Chart_Volt"
+                                                    Grid.Row="1"
+                                                    Background="#111"
+                                                    LegendPosition="Hidden"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- CURRENT -->
+                        <Border Grid.Row="1"
+                                Background="#111"
+                                BorderBrush="#444"
+                                BorderThickness="1"
+                                Padding="10">
+
+                            <Grid RowDefinitions="Auto,*">
+                                <TextBlock Text="Current (A)"
+                                           Foreground="White"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8"/>
+
+                                <lvc:CartesianChart x:Name="Chart_Current"
+                                                    Grid.Row="1"
+                                                    Background="#111"
+                                                    LegendPosition="Hidden"/>
+                            </Grid>
+                        </Border>
+
+                    </Grid>
+                </Border>
+            </TabItem>
+
+
+
+        </TabControl>
+
+        <!-- ================= CONTROL PANEL ================= -->
+        <Grid Grid.Row="1"
+              Margin="10"
+              ColumnDefinitions="*,Auto"
+              RowDefinitions="Auto,Auto"
+              ColumnSpacing="20">
+
+            <!-- STATUS -->
+            <StackPanel Orientation="Horizontal" Spacing="30">
+                <TextBlock Text="Voltage: 220.63V"/>
+                <TextBlock Text="Current: 11.60A"/>
+            </StackPanel>
+
+            <!-- RIGHT STATUS -->
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="10">
+                <TextBlock Text="Power (W)"/>
+                <CheckBox Content="Dummy Mode (Test)"/>
+            </StackPanel>
+
+            <!-- BUTTONS -->
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        Spacing="10">
+
+                <Button Content="Connect"/>
+                <Button Content="DisConnect"/>
+                <Button Content="Start" Command="{Binding ButtonStartPressedCommand}"/>
+                <Button Content="Stop"/>
+                <Button Content="Get Data"/>
+
+                <TextBlock Text="Barcode"
+                           VerticalAlignment="Center"
+                           Margin="20,0,0,0"/>
+
+                <TextBox Width="150"
+                         Watermark="Code text"/>
+            </StackPanel>
+
+        </Grid>
+
+    </Grid>
+</Window>

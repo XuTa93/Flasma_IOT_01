@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36804.6 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flasma_IOT_01", "Flasma_IOT_01\Flasma_IOT_01.csproj", "{97AFDA53-95D7-439A-A976-20B5174A3943}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flasma_IOT_01.Core", "Flasma_IOT_01.Core\Flasma_IOT_01.Core.csproj", "{77AED8AA-ACDB-F8FA-81A4-B68A9FD49FDE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{97AFDA53-95D7-439A-A976-20B5174A3943}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97AFDA53-95D7-439A-A976-20B5174A3943}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97AFDA53-95D7-439A-A976-20B5174A3943}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97AFDA53-95D7-439A-A976-20B5174A3943}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77AED8AA-ACDB-F8FA-81A4-B68A9FD49FDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77AED8AA-ACDB-F8FA-81A4-B68A9FD49FDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77AED8AA-ACDB-F8FA-81A4-B68A9FD49FDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77AED8AA-ACDB-F8FA-81A4-B68A9FD49FDE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C2B00975-8995-42D5-A946-BD05EB2D59C4}
+	EndGlobalSection
+EndGlobal

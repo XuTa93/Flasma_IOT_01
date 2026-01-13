@@ -39,4 +39,21 @@ public class ModbusConnectionSettings
     /// Starting register address for current
     /// </summary>
     public ushort CurrentRegisterAddress { get; set; } = 1;
+
+    /// <summary>
+    /// Starting register address for Alarm
+    /// </summary>
+    public ushort AlarmRegisterAddress { get; set; } = 2;
+
+    /// <summary>
+    /// Starting register address for power
+    /// </summary>
+    public ushort PowerRegisterAddress { get; set; } = 3;
+
+    public ushort CoilDoorCloseRegisterAddress { get; set; } = 0;
+    public ushort CoilDoorOpenRegisterAddress { get; set; } = 1;
+    public ushort CoilReadyRegisterAddress { get; set; } = 2;
+    public ushort CoilRunningRegisterAddress { get; set; } = 3;
+    public ushort CoilStopRegisterAddress { get; set; } = 4;
+
 }

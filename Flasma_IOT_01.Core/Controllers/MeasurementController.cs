@@ -356,6 +356,58 @@ public class MeasurementController
         return registers.Length > 0 ? registers[0] : 0;
     }
 
+    private async Task<double> ReadAlarmAsync(ModbusConnectionSettings settings)
+    {
+        var registers = await _modbusClient.ReadHoldingRegistersAsync(
+            settings.AlarmRegisterAddress, 1);
+
+        return registers.Length > 0 ? registers[0] : 0;
+    }
+
+    private async Task<double> ReadPowerAsync(ModbusConnectionSettings settings)
+    {
+        var registers = await _modbusClient.ReadHoldingRegistersAsync(
+            settings.PowerRegisterAddress, 1);
+
+        return registers.Length > 0 ? registers[0] : 0;
+    }
+
+    private async Task<bool> ReadCoilAsync(ModbusConnectionSettings settings, ushort address)
+    {
+        var coils = await _modbusClient.ReadCoilsAsync(address, 1);
+        return coils.Length > 0 && coils[0];
+    }
+
+    public async Task<bool> ReadCoilDoorCloseAsync(ModbusConnectionSettings settings)
+    {
+        return await ReadCoilAsync(settings, settings.CoilDoorCloseRegisterAddress);
+    }
+
+    public async Task<bool> ReadCoilDoorOpenAsync(ModbusConnectionSettings settings)
+    {
+        return await ReadCoilAsync(settings, settings.CoilDoorOpenRegisterAddress);
+    }
+
+    public async Task<bool> ReadCoilReadyAsync(ModbusConnectionSettings settings)
+    {
+        return await ReadCoilAsync(settings, settings.CoilReadyRegisterAddress);
+    }
+
+    public async Task<bool> ReadCoilRunningAsync(ModbusConnectionSettings settings)
+    {
+        return await ReadCoilAsync(settings, settings.CoilRunningRegisterAddress);
+    }
+
+    public async Task<bool> ReadCoilStopAsync(ModbusConnectionSettings settings)
+    {
+        return await ReadCoilAsync(settings, settings.CoilStopRegisterAddress);
+    }
+
+    public async Task WriteCoilAsync(ModbusConnectionSettings settings, ushort address, bool value)
+    {
+        await _modbusClient.WriteCoilAsync(address, value);
+    }
+
     public IEnumerable<Measurement> GetAllMeasurements()
     {
         return _dataRepository.GetAllMeasurements();

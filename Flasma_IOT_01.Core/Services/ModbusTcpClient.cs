@@ -162,6 +162,42 @@ public class ModbusTcpClient : IDisposable
         }
     }
 
+    public async Task<bool[]> ReadCoilsAsync(ushort startAddress, ushort quantity)
+    {
+        if (!IsConnected || _modbusMaster == null)
+        {
+            throw new InvalidOperationException("Modbus client is not connected");
+        }
+
+        await _lock.WaitAsync();
+        try
+        {
+            return await _modbusMaster.ReadCoilsAsync(1, startAddress, quantity);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    public async Task WriteCoilAsync(ushort address, bool value)
+    {
+        if (!IsConnected || _modbusMaster == null)
+        {
+            throw new InvalidOperationException("Modbus client is not connected");
+        }
+
+        await _lock.WaitAsync();
+        try
+        {
+            await _modbusMaster.WriteSingleCoilAsync(1, address, value);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     public void Dispose()
     {
         _lock.Wait();
