@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:vm="using:Flasma_IOT_01.ViewModels"
+        xmlns:vm="using:Flasma_IOT_01.ViewModels" 
         xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
         mc:Ignorable="d"
         Width="1100"
@@ -44,54 +44,70 @@
                 </Grid>
             </TabItem>
 
+
             <TabItem Header="Chart">
-                <Border Background="#111"
+                <Border Background="#1A1A1A"
                         Padding="20">
-
                     <Grid RowDefinitions="*,*"
-                          RowSpacing="20">
-
+                          RowSpacing="10">
+            
                         <!-- VOLTAGE -->
                         <Border Grid.Row="0"
-                                Background="#111"
+                                Background="#1A1A1A"
                                 BorderBrush="#444"
                                 BorderThickness="1"
-                                Padding="10">
-
+                                Padding="5,10,5,5">
                             <Grid RowDefinitions="Auto,*">
-                                <TextBlock Text="Voltage (V)"
+                                <TextBlock Grid.Row="0"
+                                           Text="Voltage (V)"
                                            Foreground="White"
                                            FontSize="16"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Center"
-                                           Margin="0,0,0,8"/>
-
-                                <lvc:CartesianChart x:Name="Chart_Volt"
-                                                    Grid.Row="1"
-                                                    Background="#111"
-                                                    LegendPosition="Hidden"/>
+                                           Margin="0,0,0,5"/>
+                                <!-- VOLTAGE CHART -->
+                                <lvc:CartesianChart Grid.Row="1"
+                                                    Series="{Binding VoltageSeries}"
+                                                    XAxes="{Binding VoltageXAxes}"
+                                                    YAxes="{Binding VoltageYAxes}"
+                                                    LegendPosition="Hidden"
+                                                    Background="#1A1A1A">
+                                    <lvc:CartesianChart.Resources>
+                                        <Style Selector="TextBlock" x:Key="ChartTextStyle">
+                                            <Setter Property="FontSize" Value="12"/>
+                                        </Style>
+                                    </lvc:CartesianChart.Resources>
+                                </lvc:CartesianChart>
                             </Grid>
                         </Border>
 
                         <!-- CURRENT -->
                         <Border Grid.Row="1"
-                                Background="#111"
+                                Background="#1A1A1A"
                                 BorderBrush="#444"
                                 BorderThickness="1"
-                                Padding="10">
-
+                                Padding="5,10,5,5">
                             <Grid RowDefinitions="Auto,*">
-                                <TextBlock Text="Current (A)"
+                                <TextBlock Grid.Row="0"
+                                           Text="Current (A)"
                                            Foreground="White"
                                            FontSize="16"
                                            FontWeight="Bold"
                                            HorizontalAlignment="Center"
-                                           Margin="0,0,0,8"/>
-
-                                <lvc:CartesianChart x:Name="Chart_Current"
-                                                    Grid.Row="1"
-                                                    Background="#111"
-                                                    LegendPosition="Hidden"/>
+                                           Margin="0,0,0,5"/>
+                                <!-- CURRENT CHART -->
+                                <lvc:CartesianChart Grid.Row="1"
+                                                    Series="{Binding CurrentSeries}"
+                                                    XAxes="{Binding CurrentXAxes}"
+                                                    YAxes="{Binding CurrentYAxes}"
+                                                    LegendPosition="Hidden"
+                                                    Background="#1A1A1A">
+                                    <lvc:CartesianChart.Resources>
+                                        <Style Selector="TextBlock" x:Key="ChartTextStyle">
+                                            <Setter Property="FontSize" Value="12"/>
+                                        </Style>
+                                    </lvc:CartesianChart.Resources>
+                                </lvc:CartesianChart>
                             </Grid>
                         </Border>
 
@@ -131,7 +147,7 @@
 
                 <Button Content="Connect"/>
                 <Button Content="DisConnect"/>
-                <Button Content="Start" Command="{Binding ButtonStartPressedCommand}"/>
+                <Button Content="Start" Command="{Binding ButtonStartPressedCommand}" FontSize="15"/>
                 <Button Content="Stop"/>
                 <Button Content="Get Data"/>
 
