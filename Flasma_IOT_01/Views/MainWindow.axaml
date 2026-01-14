@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:Flasma_IOT_01.ViewModels" 
         xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+        xmlns:dataGrid="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
         mc:Ignorable="d"
         Width="1100"
         Height="700"
@@ -14,44 +15,52 @@
     <Grid RowDefinitions="*,Auto">
 
         <!-- ================= TAB AREA ================= -->
-        <TabControl Grid.Row="0">
+        <TabControl Grid.Row="0"
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch">
+
 
             <!-- ================= HISTORY TAB ================= -->
-            <TabItem Header="History">
-                <Grid RowDefinitions="Auto,*">
+          <TabItem Header="History">
+    <Grid RowDefinitions="*">
 
-                    <!-- TABLE HEADER -->
-                    <Grid Grid.Row="0"
-                          ColumnDefinitions="50,100,130,130,100,120,80,120,200"
-                          Background="#EEEEEE"
-                          Height="40">
-                        <TextBlock Text="ID" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Start Time" Grid.Column="1" VerticalAlignment="Center"/>
-                        <TextBlock Text="End Time" Grid.Column="2" VerticalAlignment="Center"/>
-                        <TextBlock Text="Duration" Grid.Column="3" VerticalAlignment="Center"/>
-                        <TextBlock Text="Barcode" Grid.Column="4" VerticalAlignment="Center"/>
-                        <TextBlock Text="Result" Grid.Column="5" VerticalAlignment="Center"/>
-                        <TextBlock Text="Avg Voltage (V)" Grid.Column="6" VerticalAlignment="Center"/>
-                        <TextBlock Text="Avg Current (A)" Grid.Column="7" VerticalAlignment="Center"/>
-                        <TextBlock Text="File Path" Grid.Column="8" VerticalAlignment="Center"/>
-                    </Grid>
+        <dataGrid:DataGrid
+            x:CompileBindings="False"
+            ItemsSource="{Binding HistoryRecords}"
+            AutoGenerateColumns="False"
+            HeadersVisibility="Column"
+            GridLinesVisibility="All"
+            Background="White"
+            BorderBrush="Black"
+            BorderThickness="1">
 
-                    <!-- TABLE BODY -->
-                    <Border Grid.Row="1"
-                            Background="#B0B0B0"
-                            BorderBrush="Black"
-                            BorderThickness="1"/>
-                </Grid>
-            </TabItem>
+            <dataGrid:DataGrid.Columns>
+                <dataGrid:DataGridTextColumn Header="ID" Binding="{Binding Id}" />
+                <dataGrid:DataGridTextColumn Header="Start Time" Binding="{Binding StartTime}" />
+                <dataGrid:DataGridTextColumn Header="End Time" Binding="{Binding EndTime}" />
+                <dataGrid:DataGridTextColumn Header="Duration" Binding="{Binding Duration}" />
+                <dataGrid:DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" />
+                <dataGrid:DataGridTextColumn Header="Result" Binding="{Binding Result}" />
+                <dataGrid:DataGridTextColumn Header="Avg Voltage" Binding="{Binding AvgVoltage}" />
+                <dataGrid:DataGridTextColumn Header="Avg Current" Binding="{Binding AvgCurrent}" />
+                <dataGrid:DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" />
+            </dataGrid:DataGrid.Columns>
+
+        </dataGrid:DataGrid>
+
+    </Grid>
+</TabItem>
 
 
+            <!-- ================= CHART TAB ================= -->
             <TabItem Header="Chart">
+                <!-- Gi? nguyên ph?n Chart -->
                 <Border Background="#1A1A1A"
                         Padding="20">
                     <Grid RowDefinitions="*,*"
                           RowSpacing="10">
             
-                        <!-- VOLTAGE -->
+                        <!-- VOLTAGE CHART -->
                         <Border Grid.Row="0"
                                 Background="#1A1A1A"
                                 BorderBrush="#444"
@@ -72,16 +81,16 @@
                                                     YAxes="{Binding VoltageYAxes}"
                                                     LegendPosition="Hidden"
                                                     Background="#1A1A1A">
-                                    <lvc:CartesianChart.Resources>
-                                        <Style Selector="TextBlock" x:Key="ChartTextStyle">
+                                    <lvc:CartesianChart.Styles>
+                                        <Style Selector="TextBlock">
                                             <Setter Property="FontSize" Value="12"/>
                                         </Style>
-                                    </lvc:CartesianChart.Resources>
+                                    </lvc:CartesianChart.Styles>
                                 </lvc:CartesianChart>
                             </Grid>
                         </Border>
 
-                        <!-- CURRENT -->
+                        <!-- CURRENT CHART -->
                         <Border Grid.Row="1"
                                 Background="#1A1A1A"
                                 BorderBrush="#444"
@@ -102,11 +111,11 @@
                                                     YAxes="{Binding CurrentYAxes}"
                                                     LegendPosition="Hidden"
                                                     Background="#1A1A1A">
-                                    <lvc:CartesianChart.Resources>
-                                        <Style Selector="TextBlock" x:Key="ChartTextStyle">
+                                    <lvc:CartesianChart.Styles>
+                                        <Style Selector="TextBlock">
                                             <Setter Property="FontSize" Value="12"/>
                                         </Style>
-                                    </lvc:CartesianChart.Resources>
+                                    </lvc:CartesianChart.Styles>
                                 </lvc:CartesianChart>
                             </Grid>
                         </Border>
@@ -114,8 +123,6 @@
                     </Grid>
                 </Border>
             </TabItem>
-
-
 
         </TabControl>
 
@@ -126,17 +133,17 @@
               RowDefinitions="Auto,Auto"
               ColumnSpacing="20">
 
-            <!-- STATUS -->
+            <!-- STATUS - BINDING V?I VIEWMODEL -->
             <StackPanel Orientation="Horizontal" Spacing="30">
-                <TextBlock Text="Voltage: 220.63V"/>
-                <TextBlock Text="Current: 11.60A"/>
+                <TextBlock Text="{Binding Voltage, StringFormat='Voltage: {0:F2}V'}"/>
+                <TextBlock Text="{Binding Current, StringFormat='Current: {0:F2}A'}"/>
             </StackPanel>
 
             <!-- RIGHT STATUS -->
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
                         Spacing="10">
-                <TextBlock Text="Power (W)"/>
+                <TextBlock Text="{Binding Power, StringFormat='Power: {0:F2}W'}"/>
                 <CheckBox Content="Dummy Mode (Test)"/>
             </StackPanel>
 
