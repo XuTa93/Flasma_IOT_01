@@ -30,8 +30,6 @@
             AutoGenerateColumns="False"
             HeadersVisibility="Column"
             GridLinesVisibility="All"
-            Background="White"
-            BorderBrush="Black"
             BorderThickness="1">
 
             <dataGrid:DataGrid.Columns>
@@ -135,16 +133,24 @@
 
             <!-- STATUS - BINDING V?I VIEWMODEL -->
             <StackPanel Orientation="Horizontal" Spacing="30">
-                <TextBlock Text="{Binding Voltage, StringFormat='Voltage: {0:F2}V'}"/>
-                <TextBlock Text="{Binding Current, StringFormat='Current: {0:F2}A'}"/>
+                <TextBlock Text="{Binding Voltage, StringFormat='Voltage: {0:F2}V'}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Current, StringFormat='Current: {0:F2}A'}" VerticalAlignment="Center"/>
+               <TextBlock Text="{Binding Power, StringFormat='Power: {0:F2}W'}" VerticalAlignment="Center"/>
             </StackPanel>
 
             <!-- RIGHT STATUS -->
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
                         Spacing="10">
-                <TextBlock Text="{Binding Power, StringFormat='Power: {0:F2}W'}"/>
-                <CheckBox Content="Dummy Mode (Test)"/>
+                 <Border Background="{Binding StatusColor}" 
+                        CornerRadius="3"
+                        Padding="8,4"
+                        VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusText}" 
+                               FontWeight="Bold"
+                               Foreground="White"/>
+                </Border>
+                <CheckBox Content="Dummy Mode (Test)" IsChecked="{Binding IsDummy, Mode=TwoWay}"/>
             </StackPanel>
 
             <!-- BUTTONS -->
@@ -152,17 +158,16 @@
                         Orientation="Horizontal"
                         Spacing="10">
 
-                <Button Content="Connect"/>
-                <Button Content="DisConnect"/>
-                <Button Content="Start" Command="{Binding ButtonStartPressedCommand}" FontSize="15"/>
-                <Button Content="Stop"/>
-                <Button Content="Get Data"/>
+                <Button Content="Connect" Command="{Binding ButtonConnectPressedCommand}" IsEnabled="{Binding IsConnect}"/>
+                <Button Content="DisConnect" Command="{Binding ButtonDisconnectPressedCommand}" IsEnabled="{Binding IsDisConnect}"/>
+                <Button Content="Start" Command="{Binding ButtonStartPressedCommand}" IsEnabled="{Binding IsStart}"/>
+                <Button Content="Stop" Command="{Binding ButtonStopPressedCommand}" IsEnabled="{Binding IsStop}"/>
 
                 <TextBlock Text="Barcode"
                            VerticalAlignment="Center"
                            Margin="20,0,0,0"/>
 
-                <TextBox Width="150"
+                <TextBox Width="150" Text="{Binding BarcodeText}"
                          Watermark="Code text"/>
             </StackPanel>
 

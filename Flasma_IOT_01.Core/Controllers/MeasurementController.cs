@@ -18,7 +18,15 @@ public class MeasurementController
     private Task? _backgroundReadTask;
     private double _lastVoltage = 0;
     private double _lastCurrent = 0;
-    private bool _isMeasuring = false;
+    private double _alarmStatus = 0;
+    private double _lastPower = 0;
+    private bool _lastCoilDoorClose = false;
+    private bool _lastCoilDoorOpen = false;
+    private bool _lastCoilReady = false;
+    private bool _lastCoilRunning = false;
+    private bool _lastCoilStopped = false;
+
+    private bool _isRunning = false;
     private bool _isDummyMode = false;
     private int _reconnectAttempts = 0;
     private bool _lastReportedConnectionState = false;
@@ -76,7 +84,7 @@ public class MeasurementController
 
             _dataSampler.Start(samplingIntervalMs);
             NotifyConnectionStatusChangedIfNeeded(true); // Simulate connected state
-
+           
             _backgroundReadTask = DummyDataLoopAsync(_backgroundReadCts.Token);
         }
         catch (Exception ex)
@@ -124,7 +132,7 @@ public class MeasurementController
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(100, cancellationToken);
+                await Task.Delay(1000, cancellationToken);
 
                 try
                 {
@@ -132,7 +140,7 @@ public class MeasurementController
                     _lastCurrent = _dummyDataGenerator.GenerateCurrent();
 
                     // Invoke the NewDataRead event
-                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
+                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent, _lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStopped  ));
                 }
                 catch (Exception ex)
                 {
@@ -216,7 +224,7 @@ public class MeasurementController
         try
         {
             _measurementStartTime = DateTime.Now;
-            _isMeasuring = true;
+            _isRunning = true;
             MeasurementStarted?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
@@ -233,7 +241,7 @@ public class MeasurementController
     {
         try
         {
-            _isMeasuring = false;
+            _isRunning = false;
             MeasurementStopped?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
@@ -252,7 +260,7 @@ public class MeasurementController
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(100, cancellationToken);
+                await Task.Delay(1000, cancellationToken);
 
                 NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
 
@@ -271,8 +279,15 @@ public class MeasurementController
                 {
                     _lastVoltage = await ReadVoltageAsync(_modbusSettings);
                     _lastCurrent = await ReadCurrentAsync(_modbusSettings);
+                    _alarmStatus = await ReadAlarmAsync(_modbusSettings);
+                    _lastPower = await ReadPowerAsync(_modbusSettings);
+                    _lastCoilDoorClose = await ReadCoilDoorCloseAsync(_modbusSettings);
+                    _lastCoilDoorOpen = await ReadCoilDoorOpenAsync(_modbusSettings);
+                    _lastCoilReady = await ReadCoilReadyAsync(_modbusSettings);
+                    _lastCoilRunning = await ReadCoilRunningAsync(_modbusSettings);
+                    _lastCoilStopped = await ReadCoilStopAsync(_modbusSettings);
 
-                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
+                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent, _lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStopped));
                 }
                 catch (Exception ex)
                 {
@@ -296,12 +311,12 @@ public class MeasurementController
     {
         try
         {
-            if (!_isMeasuring)
+            if (!_isRunning)
                 return;
 
             var measurement = new Measurement(_lastVoltage, _lastCurrent);
             _dataRepository.AddMeasurement(measurement);
-            NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
+            NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent, _lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStopped  ));
         }
         catch (Exception ex)
         {
