@@ -25,35 +25,19 @@ namespace Flasma_IOT_01.ViewModels
 		public ISeries[] VoltageSeries { get; }
 		public ISeries[] CurrentSeries { get; }
 
-		private Axis[] _voltageXAxes;
-		public Axis[] VoltageXAxes
-		{
-			get => _voltageXAxes;
-			set => SetProperty(ref _voltageXAxes, value);
-		}
+        [ObservableProperty]
+        private Axis[] voltageXAxes;
 
-		private Axis[] _voltageYAxes;
-		public Axis[] VoltageYAxes
-		{
-			get => _voltageYAxes;
-			set => SetProperty(ref _voltageYAxes, value);
-		}
+        [ObservableProperty]
+        private Axis[] voltageYAxes;
 
-		private Axis[] _currentXAxes;
-		public Axis[] CurrentXAxes
-		{
-			get => _currentXAxes;
-			set => SetProperty(ref _currentXAxes, value);
-		}
+        [ObservableProperty]
+        private Axis[] currentXAxes;
 
-		private Axis[] _currentYAxes;
-		public Axis[] CurrentYAxes
-		{
-			get => _currentYAxes;
-			set => SetProperty(ref _currentYAxes, value);
-		}
+        [ObservableProperty]
+        private Axis[] currentYAxes;
 
-		[ObservableProperty]
+        [ObservableProperty]
 		private ObservableCollection<HistoryRecord> historyRecords = new();
 
 		[ObservableProperty]
@@ -487,86 +471,68 @@ namespace Flasma_IOT_01.ViewModels
 				_voltageValues.Add(e.Voltage);
 				_currentValues.Add(e.Current);
 
-				// Tạo bản sao mới của mảng axes để kích hoạt PropertyChanged
-				var newVoltageXAxes = VoltageXAxes.ToArray();
-				var newVoltageYAxes = VoltageYAxes.ToArray();
-				var newCurrentXAxes = CurrentXAxes.ToArray();
-				var newCurrentYAxes = CurrentYAxes.ToArray();
-
 				// Cập nhật trục X để hiển thị toàn bộ dữ liệu
-				newVoltageXAxes[0].MinLimit = 0;
-				newVoltageXAxes[0].MaxLimit = _voltageValues.Count > 10 ? _voltageValues.Count : 10;
+				VoltageXAxes[0].MinLimit = 0;
+				VoltageXAxes[0].MaxLimit = _voltageValues.Count > 10 ? _voltageValues.Count : 10;
 
-				newCurrentXAxes[0].MinLimit = 0;
-				newCurrentXAxes[0].MaxLimit = _currentValues.Count > 10 ? _currentValues.Count : 10;
+				CurrentXAxes[0].MinLimit = 0;
+				CurrentXAxes[0].MaxLimit = _currentValues.Count > 10 ? _currentValues.Count : 10;
 
-				// Tự động điều chỉnh trục Y nếu cần
+				// Tự động điều chỉnh trục Y cho Voltage
 				if (_voltageValues.Any())
 				{
 					var maxVoltage = _voltageValues.Max();
 					var minVoltage = _voltageValues.Min();
 
-
-					var range = maxVoltage  - minVoltage;
-					const double minVoltageSpan = 0.5; // minimum visible span when values are flat or zero
+					var range = maxVoltage - minVoltage;
+					const double minVoltageSpan = 0.5;
 					var padding = Math.Max(range * 0.1, minVoltageSpan);
 
 					var suggestedMin = Math.Floor(minVoltage - padding / 2.0);
-					// keep Y axis non-negative
 					suggestedMin = Math.Max(0, suggestedMin);
 					var suggestedMax = Math.Ceiling(maxVoltage + padding / 2.0);
 
-					// ensure max > min
 					if (suggestedMax <= suggestedMin)
 					{
 						suggestedMax = suggestedMin + minVoltageSpan;
 					}
 
-					newCurrentYAxes[0].MinLimit = suggestedMin;
-					newCurrentYAxes[0].MaxLimit = suggestedMax;
+					VoltageYAxes[0].MinLimit = suggestedMin;
+					VoltageYAxes[0].MaxLimit = suggestedMax;
 				}
 				else
 				{
-					// Giữ giá trị mặc định nếu không có dữ liệu
-					newVoltageYAxes[0].MinLimit = 0;
-					newVoltageYAxes[0].MaxLimit = 350;
+					VoltageYAxes[0].MinLimit = 0;
+					VoltageYAxes[0].MaxLimit = 350;
 				}
 
+				// Tự động điều chỉnh trục Y cho Current
 				if (_currentValues.Any())
 				{
 					var maxCurrent = _currentValues.Max();
 					var minCurrent = _currentValues.Min();
 
 					var range = maxCurrent - minCurrent;
-					const double minCurrentSpan = 0.5; // minimum visible span when values are flat or zero
+					const double minCurrentSpan = 0.5;
 					var padding = Math.Max(range * 0.1, minCurrentSpan);
 
 					var suggestedMin = Math.Floor(minCurrent - padding / 2.0);
-					// keep Y axis non-negative
 					suggestedMin = Math.Max(0, suggestedMin);
 					var suggestedMax = Math.Ceiling(maxCurrent + padding / 2.0);
 
-					// ensure max > min
 					if (suggestedMax <= suggestedMin)
 					{
 						suggestedMax = suggestedMin + minCurrentSpan;
 					}
 
-					newCurrentYAxes[0].MinLimit = suggestedMin;
-					newCurrentYAxes[0].MaxLimit = suggestedMax;
+					CurrentYAxes[0].MinLimit = suggestedMin;
+					CurrentYAxes[0].MaxLimit = suggestedMax;
 				}
 				else
 				{
-					// Giữ giá trị mặc định nếu không có dữ liệu
-					newCurrentYAxes[0].MinLimit = 0;
-					newCurrentYAxes[0].MaxLimit = 5;
+					CurrentYAxes[0].MinLimit = 0;
+					CurrentYAxes[0].MaxLimit = 5;
 				}
-
-				// Cập nhật thuộc tính để kích hoạt PropertyChanged
-				VoltageXAxes = newVoltageXAxes;
-				VoltageYAxes = newVoltageYAxes;
-				CurrentXAxes = newCurrentXAxes;
-				CurrentYAxes = newCurrentYAxes;
 			}
 		}
 
@@ -576,29 +542,17 @@ namespace Flasma_IOT_01.ViewModels
 			_currentValues.Clear();
 			_chartTimeCounter = 0;
 
-			// Tạo bản sao mới để kích hoạt PropertyChanged
-			var newVoltageXAxes = VoltageXAxes.ToArray();
-			var newVoltageYAxes = VoltageYAxes.ToArray();
-			var newCurrentXAxes = CurrentXAxes.ToArray();
-			var newCurrentYAxes = CurrentYAxes.ToArray();
-
 			// Reset trục X
-			newVoltageXAxes[0].MinLimit = 0;
-			newVoltageXAxes[0].MaxLimit = 10;
-			newCurrentXAxes[0].MinLimit = 0;
-			newCurrentXAxes[0].MaxLimit = 10;
+			VoltageXAxes[0].MinLimit = 0;
+			VoltageXAxes[0].MaxLimit = 10;
+			CurrentXAxes[0].MinLimit = 0;
+			CurrentXAxes[0].MaxLimit = 10;
 
 			// Reset trục Y về giá trị mặc định
-			newVoltageYAxes[0].MinLimit = 0;
-			newVoltageYAxes[0].MaxLimit = 350;
-			newCurrentYAxes[0].MinLimit = 0;
-			newCurrentYAxes[0].MaxLimit = 5;
-
-			// Cập nhật thuộc tính
-			VoltageXAxes = newVoltageXAxes;
-			VoltageYAxes = newVoltageYAxes;
-			CurrentXAxes = newCurrentXAxes;
-			CurrentYAxes = newCurrentYAxes;
+			VoltageYAxes[0].MinLimit = 0;
+			VoltageYAxes[0].MaxLimit = 350;
+			CurrentYAxes[0].MinLimit = 0;
+			CurrentYAxes[0].MaxLimit = 5;
 		}
 	}
 
