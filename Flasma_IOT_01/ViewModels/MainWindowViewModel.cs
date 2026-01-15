@@ -506,9 +506,24 @@ namespace Flasma_IOT_01.ViewModels
 					var maxVoltage = _voltageValues.Max();
 					var minVoltage = _voltageValues.Min();
 
-					// Đảm bảo trục Y luôn có giá trị tối thiểu
-					newVoltageYAxes[0].MinLimit = Math.Max(0, Math.Floor(minVoltage * 0.9));
-					newVoltageYAxes[0].MaxLimit = Math.Ceiling(maxVoltage * 1.1);
+
+					var range = maxVoltage  - minVoltage;
+					const double minVoltageSpan = 0.5; // minimum visible span when values are flat or zero
+					var padding = Math.Max(range * 0.1, minVoltageSpan);
+
+					var suggestedMin = Math.Floor(minVoltage - padding / 2.0);
+					// keep Y axis non-negative
+					suggestedMin = Math.Max(0, suggestedMin);
+					var suggestedMax = Math.Ceiling(maxVoltage + padding / 2.0);
+
+					// ensure max > min
+					if (suggestedMax <= suggestedMin)
+					{
+						suggestedMax = suggestedMin + minVoltageSpan;
+					}
+
+					newCurrentYAxes[0].MinLimit = suggestedMin;
+					newCurrentYAxes[0].MaxLimit = suggestedMax;
 				}
 				else
 				{
@@ -522,9 +537,23 @@ namespace Flasma_IOT_01.ViewModels
 					var maxCurrent = _currentValues.Max();
 					var minCurrent = _currentValues.Min();
 
-					// Đảm bảo trục Y luôn có giá trị tối thiểu
-					newCurrentYAxes[0].MinLimit = Math.Max(0, Math.Floor(minCurrent * 0.9));
-					newCurrentYAxes[0].MaxLimit = Math.Ceiling(maxCurrent * 1.1);
+					var range = maxCurrent - minCurrent;
+					const double minCurrentSpan = 0.5; // minimum visible span when values are flat or zero
+					var padding = Math.Max(range * 0.1, minCurrentSpan);
+
+					var suggestedMin = Math.Floor(minCurrent - padding / 2.0);
+					// keep Y axis non-negative
+					suggestedMin = Math.Max(0, suggestedMin);
+					var suggestedMax = Math.Ceiling(maxCurrent + padding / 2.0);
+
+					// ensure max > min
+					if (suggestedMax <= suggestedMin)
+					{
+						suggestedMax = suggestedMin + minCurrentSpan;
+					}
+
+					newCurrentYAxes[0].MinLimit = suggestedMin;
+					newCurrentYAxes[0].MaxLimit = suggestedMax;
 				}
 				else
 				{
