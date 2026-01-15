@@ -14,6 +14,8 @@ namespace Flasma_IOT_01.Core.Models
         public bool IsDoorOpened { get; set; } = false;
         public bool IsReady { get; set; } = false;
         public bool IsRunning { get; set; } = false;
+
+        public bool IsStart { get; set; } = false;
         public bool IsStopped { get; set; } = false;
 
         public DateTime Timestamp { get; set; }
