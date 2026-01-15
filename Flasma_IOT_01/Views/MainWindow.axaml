@@ -30,25 +30,27 @@
             AutoGenerateColumns="False"
             HeadersVisibility="Column"
             GridLinesVisibility="All"
-            BorderThickness="1">
+            BorderThickness="1"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            ColumnWidth="Auto">
 
             <dataGrid:DataGrid.Columns>
-                <dataGrid:DataGridTextColumn Header="ID" Binding="{Binding Id}" />
-                <dataGrid:DataGridTextColumn Header="Start Time" Binding="{Binding StartTime}" />
-                <dataGrid:DataGridTextColumn Header="End Time" Binding="{Binding EndTime}" />
-                <dataGrid:DataGridTextColumn Header="Duration" Binding="{Binding Duration}" />
-                <dataGrid:DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" />
-                <dataGrid:DataGridTextColumn Header="Result" Binding="{Binding Result}" />
-                <dataGrid:DataGridTextColumn Header="Avg Voltage" Binding="{Binding AvgVoltage}" />
-                <dataGrid:DataGridTextColumn Header="Avg Current" Binding="{Binding AvgCurrent}" />
-                <dataGrid:DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" />
+                <dataGrid:DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80"/>
+                <dataGrid:DataGridTextColumn Header="Start Time" Binding="{Binding StartTime}" Width="150"/>
+                <dataGrid:DataGridTextColumn Header="End Time" Binding="{Binding EndTime}" Width="150"/>
+                <dataGrid:DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="120"/>
+                <dataGrid:DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="150"/>
+                <dataGrid:DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="100"/>
+                <dataGrid:DataGridTextColumn Header="Avg Voltage" Binding="{Binding AvgVoltage}" Width="130"/>
+                <dataGrid:DataGridTextColumn Header="Avg Current" Binding="{Binding AvgCurrent}" Width="100"/>
+                <dataGrid:DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" Width="300"/>
             </dataGrid:DataGrid.Columns>
 
         </dataGrid:DataGrid>
 
     </Grid>
 </TabItem>
-
 
             <!-- ================= CHART TAB ================= -->
             <TabItem Header="Chart">
@@ -122,6 +124,46 @@
                 </Border>
             </TabItem>
 
+            <!-- ================= ALARM TAB ================= -->
+<!-- ================= ALARM TAB ================= -->
+<TabItem Header="Alarm">
+    <Grid RowDefinitions="*">
+        
+        <dataGrid:DataGrid
+            x:CompileBindings="False"
+            ItemsSource="{Binding AlarmRecords}"
+            AutoGenerateColumns="False"
+            HeadersVisibility="Column"
+            GridLinesVisibility="All"
+            BorderThickness="1"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            ColumnWidth="*">
+
+            <dataGrid:DataGrid.Columns>
+                <dataGrid:DataGridTextColumn Header="No." Binding="{Binding No}" Width="80"/>
+                <dataGrid:DataGridTextColumn Header="Name Alarm" Binding="{Binding NameAlarm}" Width="*"/>
+                
+                <!-- Status Column with Template -->
+                <dataGrid:DataGridTemplateColumn Header="Status" Width="150">
+                    <dataGrid:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Status}" 
+                                       Foreground="{Binding StatusColor}"
+                                       FontWeight="{Binding StatusFontWeight}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"/>
+                        </DataTemplate>
+                    </dataGrid:DataGridTemplateColumn.CellTemplate>
+                </dataGrid:DataGridTemplateColumn>
+                
+                <dataGrid:DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="180"/>
+            </dataGrid:DataGrid.Columns>
+
+        </dataGrid:DataGrid>
+
+    </Grid>
+</TabItem>
         </TabControl>
 
         <!-- ================= CONTROL PANEL ================= -->
@@ -139,19 +181,62 @@
             </StackPanel>
 
             <!-- RIGHT STATUS -->
-            <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        Spacing="10">
-                 <Border Background="{Binding StatusColor}" 
-                        CornerRadius="3"
-                        Padding="8,4"
-                        VerticalAlignment="Center">
-                    <TextBlock Text="{Binding StatusText}" 
-                               FontWeight="Bold"
-                               Foreground="White"/>
-                </Border>
-                <CheckBox Content="Dummy Mode (Test)" IsChecked="{Binding IsDummy, Mode=TwoWay}"/>
-            </StackPanel>
+<StackPanel Grid.Column="1"
+            Orientation="Vertical"
+            Spacing="8">
+
+    <!-- STATUS -->
+    <StackPanel Orientation="Horizontal" Spacing="10">
+        <Border Background="{Binding StatusColor}" 
+                CornerRadius="3"
+                Padding="8,4"
+                VerticalAlignment="Center">
+            <TextBlock Text="{Binding StatusText}" 
+                       FontWeight="Bold"
+                       Foreground="White"/>
+        </Border>
+
+        <CheckBox Content="Dummy Mode (Test)"
+                  IsChecked="{Binding IsDummy, Mode=TwoWay}"/>
+    </StackPanel>
+
+    <!-- ===== RESULT SUMMARY ===== -->
+    <Border BorderBrush="#555"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="8"
+            Background="#1F1F1F">
+
+        <Grid ColumnDefinitions="Auto,Auto"
+              RowDefinitions="Auto,Auto"
+              ColumnSpacing="20"
+              RowSpacing="6">
+
+            <TextBlock Text="OK"
+                       Foreground="Lime"
+                       FontWeight="Bold"/>
+
+            <TextBlock Grid.Column="1"
+                       Text="{Binding OkCount}"
+                       Foreground="Lime"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Right"/>
+
+            <TextBlock Grid.Row="1"
+                       Text="NG"
+                       Foreground="Red"
+                       FontWeight="Bold"/>
+
+            <TextBlock Grid.Row="1"
+                       Grid.Column="1"
+                       Text="{Binding NgCount}"
+                       Foreground="Red"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Right"/>
+        </Grid>
+    </Border>
+</StackPanel>
+
 
             <!-- BUTTONS -->
             <StackPanel Grid.Row="1"

@@ -25,13 +25,19 @@ namespace Flasma_IOT_01.ViewModels
 		public ISeries[] VoltageSeries { get; }
 		public ISeries[] CurrentSeries { get; }
 
-		public Axis[] VoltageXAxes { get; }
-		public Axis[] VoltageYAxes { get; }
+        [ObservableProperty]
+        private Axis[] voltageXAxes;
 
-		public Axis[] CurrentXAxes { get; }
-		public Axis[] CurrentYAxes { get; }
+        [ObservableProperty]
+        private Axis[] voltageYAxes;
 
-		[ObservableProperty]
+        [ObservableProperty]
+        private Axis[] currentXAxes;
+
+        [ObservableProperty]
+        private Axis[] currentYAxes;
+
+        [ObservableProperty]
 		private ObservableCollection<HistoryRecord> historyRecords = new();
 
 		[ObservableProperty]
@@ -61,67 +67,78 @@ namespace Flasma_IOT_01.ViewModels
 		[ObservableProperty]
 		private bool coilStop;
 
-        [ObservableProperty]
-        private bool isStart = false;
+		[ObservableProperty]
+		private bool isStart = false;
 
-        [ObservableProperty]
-        private bool isStop = true;
+		[ObservableProperty]
+		private bool isStop = true;
 
-        [ObservableProperty]
-        private bool isConnect = true;
+		[ObservableProperty]
+		private bool isConnect = true;
 
-        [ObservableProperty]
-        private bool isDisConnect = false;
+		[ObservableProperty]
+		private bool isDisConnect = false;
 
-        [ObservableProperty]
-        private bool isDummy;
+		[ObservableProperty]
+		private bool isDummy;
 
-        [ObservableProperty]
-        private string barcodeText = "Code1";
+		[ObservableProperty]
+		private string barcodeText = "Code1";
 
-        [ObservableProperty]
-        private string statusText = "Ready";
+		[ObservableProperty]
+		private string statusText = "Ready";
 
-        [ObservableProperty]
-        private string statusColor = "Green";
+		[ObservableProperty]
+		private string statusColor = "Green";
 
-        private readonly MeasurementController _measurementController;
-        private readonly ModbusTcpClient _modbusClient;
-        private readonly DataSampler _dataSampler;
-        private readonly InMemoryDataRepository _dataRepository;
-        private readonly ExcelReportExporter _reportExporter;
-        private readonly MeasurementHistoryRepository _historyRepository;
+		[ObservableProperty]
+		private int okCount;
 
-        private bool _isRecording = false;
-        private int _lastMeasurementCount = 0;
-        private DateTime _lastMeasurementTimestamp = DateTime.MinValue;
+		[ObservableProperty]
+		private int ngCount;
 
-        // Collections để lưu dữ liệu chart
-        private readonly ObservableCollection<double> _voltageValues = new();
-        private readonly ObservableCollection<double> _currentValues = new();
-        private double _chartTimeCounter = 0;
-        private const int MaxDataPoints = 100; // Giới hạn số điểm hiển thị
+		[ObservableProperty]
+		private ObservableCollection<AlarmRecord> alarmRecords = new();
 
-        public MainWindowViewModel()
+
+		private readonly MeasurementController _measurementController;
+		private readonly ModbusTcpClient _modbusClient;
+		private readonly DataSampler _dataSampler;
+		private readonly InMemoryDataRepository _dataRepository;
+		private readonly ExcelReportExporter _reportExporter;
+		private readonly MeasurementHistoryRepository _historyRepository;
+
+		private bool _isRecording = false;
+		private int _lastMeasurementCount = 0;
+		private DateTime _lastMeasurementTimestamp = DateTime.MinValue;
+
+		// Collections để lưu dữ liệu chart
+		private readonly ObservableCollection<double> _voltageValues = new();
+		private readonly ObservableCollection<double> _currentValues = new();
+
+		private double _chartTimeCounter = 0;
+		private const int MaxDataPoints = 100; // Giới hạn số điểm hiển thị
+
+		public MainWindowViewModel()
 		{
-            _modbusClient = new ModbusTcpClient();
-            _dataSampler = new DataSampler();
-            _reportExporter = new ExcelReportExporter();
-            _dataRepository = new InMemoryDataRepository();
-            _historyRepository = new MeasurementHistoryRepository();
-            _measurementController = new MeasurementController(
-                _modbusClient,
-                _dataSampler,
-                _dataRepository,
-                _reportExporter,
-                _historyRepository);
+			_modbusClient = new ModbusTcpClient();
+			_dataSampler = new DataSampler();
+			_reportExporter = new ExcelReportExporter();
+			_dataRepository = new InMemoryDataRepository();
+			_historyRepository = new MeasurementHistoryRepository();
+			_measurementController = new MeasurementController(
+				_modbusClient,
+				_dataSampler,
+				_dataRepository,
+				_reportExporter,
+				_historyRepository);
 
-            // Subscribe to the NewDataRead event
-            _measurementController.NewDataRead += OnMeasurementControllerNewDataRead;
-            _measurementController.ErrorOccurred += OnMeasurementControllerErrorOccurred;
-            _measurementController.MeasurementStarted += OnMeasurementControllerMeasurementStarted;
-            _measurementController.MeasurementStopped += OnMeasurementControllerMeasurementStopped;
-            _measurementController.ConnectionStatusChanged += MeasurementController_ConnectionStatusChanged;
+			// Subscribe to the NewDataRead event
+			_measurementController.NewDataRead += OnMeasurementControllerNewDataRead;
+			_measurementController.ErrorOccurred += OnMeasurementControllerErrorOccurred;
+			_measurementController.MeasurementStarted += OnMeasurementControllerMeasurementStarted;
+			_measurementController.MeasurementStopped += OnMeasurementControllerMeasurementStopped;
+			_measurementController.ConnectionStatusChanged += MeasurementController_ConnectionStatusChanged;
 
 			if (Design.IsDesignMode)
 				return;
@@ -134,7 +151,7 @@ namespace Flasma_IOT_01.ViewModels
 					Values = _voltageValues,
 					GeometrySize = 0,
 					Stroke = new SolidColorPaint(SKColors.Lime, 2),
-                    Fill = null
+					Fill = null
 				}
 			};
 
@@ -180,7 +197,7 @@ namespace Flasma_IOT_01.ViewModels
 					Values = _currentValues,
 					GeometrySize = 0,
 					Stroke = new SolidColorPaint(SKColors.Cyan, 2),
-                    Fill = null
+					Fill = null
 				}
 			};
 
@@ -219,286 +236,420 @@ namespace Flasma_IOT_01.ViewModels
 			};
 		}
 
-
-        private void MeasurementController_ConnectionStatusChanged(object? sender, bool e)
-        {
-            if (!IsDummy)
-            {
-                if (e == true)
-                {
-                    IsStart = true;
-                    IsConnect = false;
+		private void MeasurementController_ConnectionStatusChanged(object? sender, bool e)
+		{
+			if (!IsDummy)
+			{
+				if (e == true)
+				{
+					IsStart = true;
+					IsConnect = false;
 					IsDisConnect = true;
-					
+
 					// Cập nhật status
 					StatusText = "Connected";
 					StatusColor = "Green";
-                }
-                else
-                {
-                    IsStart = false;
-                    IsConnect = true;
-					
+				}
+				else
+				{
+					IsStart = false;
+					IsConnect = true;
+
 					// Cập nhật status
 					StatusText = "Disconnected";
 					StatusColor = "Gray";
-                }
-            }
-        }
+				}
+			}
+		}
 
-        [RelayCommand]
+		[RelayCommand]
 		private void OnButtonStartPressed()
 		{
-            // Thực hiện hành động khi nút được nhấn
-            // Xóa dữ liệu cũ trong repository
-            _measurementController.ClearMeasurements();
+			// Thực hiện hành động khi nút được nhấn
+			// Xóa dữ liệu cũ trong repository
+			_measurementController.ClearMeasurements();
 
-            // Reset cache
-            _lastMeasurementCount = 0;
-            _lastMeasurementTimestamp = DateTime.MinValue;
+			// Reset cache
+			_lastMeasurementCount = 0;
+			_lastMeasurementTimestamp = DateTime.MinValue;
 
-            // Bắt đầu recording
-            _isRecording = true;
+			// Bắt đầu recording
+			_isRecording = true;
 
-            // Xóa chart
-            ClearChart();
+			// Xóa chart
+			ClearChart();
 
-            // Cập nhật status
-            StatusText = "Recording...";
-            StatusColor = "Red";
+			// Cập nhật status
+			StatusText = "Recording...";
+			StatusColor = "Red";
 
-            // Chuyển sang tab Chart
-            //tabControl1.SelectedIndex = 1; // Index 1 là tabPage2 (Chart)
+			_measurementController.StartMeasurementAsync();
+		}
 
-            _measurementController.StartMeasurementAsync();
-        }
+		[RelayCommand]
+		private void OnButtonStopPressed()
+		{
+			// Thực hiện hành động khi nút được nhấn
+			_isRecording = false;
 
-        [RelayCommand]
-        private void OnButtonStopPressed()
-        {
-            // Thực hiện hành động khi nút được nhấn
-            _isRecording = false;
-            
-            // Cập nhật status
-            StatusText = "Stopped";
-            StatusColor = "Orange";
-            
-            _ = _measurementController.StopMeasurementAsync();
-        }
+			// Cập nhật status
+			StatusText = "Stopped";
+			StatusColor = "Orange";
+
+			_ = _measurementController.StopMeasurementAsync();
+		}
 
 		[RelayCommand]
 		private void OnButtonConnectPressed()
 		{
-            // Thực hiện hành động khi nút được nhấn
-            var settings = new ModbusConnectionSettings
-            {
-                IpAddress = "127.0.0.1",
-                Port = 502,
-                VoltageRegisterAddress = 0,
-                CurrentRegisterAddress = 1,
-                SamplingIntervalMs = 1000,
-                TimeoutMs = 5000,
-                RetryCount = 3
-            };
-            
-            // Cập nhật status
-            StatusText = "Connecting...";
-            StatusColor = "Yellow";
-            
-            _ = _measurementController.StartBackgroundReadAsync(settings);	
-        }
+			// Thực hiện hành động khi nút được nhấn
+			var settings = new ModbusConnectionSettings
+			{
+				IpAddress = "192.168.1.13",
+				Port = 505,
+				VoltageRegisterAddress = 3,
+				CurrentRegisterAddress = 4,
+				AlarmRegisterAddress = 7,
+				SamplingIntervalMs = 1000,
+				TimeoutMs = 5000,
+				RetryCount = 3
+			};
+
+			// Cập nhật status
+			StatusText = "Connecting...";
+			StatusColor = "Yellow";
+
+			_ = _measurementController.StartBackgroundReadAsync(settings);
+		}
 
 		[RelayCommand]
 		private void OnButtonDisconnectPressed()
 		{
-            // Thực hiện hành động khi nút được nhấn
-            StatusText = "Disconnecting...";
-            StatusColor = "Orange";
-            
-            if (_measurementController.IsDummyMode)
-            {
-                _ = _measurementController.StopDummyModeAsync();
-            }
-            else
-            {
-                _ = _measurementController.StopBackgroundReadAsync();
-            }
-        }
+			// Thực hiện hành động khi nút được nhấn
+			StatusText = "Disconnecting...";
+			StatusColor = "Orange";
 
-        partial void OnIsDummyChanged(bool value)
-        {
-            if (value)
-            {
-                // Enable dummy mode
-                IsConnect = false;
-                IsStart = true;
-                
-                StatusText = "Dummy Mode - Ready";
-                StatusColor = "Cyan";
-                
-                _measurementController.StartDummyModeAsync(1000);
-            }
-            else
-            {
-                // Disable dummy mode
-                _measurementController.StopDummyModeAsync();
-                IsConnect = !_measurementController.IsModbusConnected;
-                IsStart = _measurementController.IsModbusConnected;
-                
-                StatusText = "Ready";
-                StatusColor = "Green";
-            }
-        }
+			if (_measurementController.IsDummyMode)
+			{
+				_ = _measurementController.StopDummyModeAsync();
+			}
+			else
+			{
+				_ = _measurementController.StopBackgroundReadAsync();
+			}
+		}
+
+		partial void OnIsDummyChanged(bool value)
+		{
+			if (value)
+			{
+				// Enable dummy mode
+				IsConnect = false;
+				IsStart = true;
+
+				StatusText = "Dummy Mode - Ready";
+				StatusColor = "Cyan";
+
+				_measurementController.StartDummyModeAsync(1000);
+			}
+			else
+			{
+				// Disable dummy mode
+				_measurementController.StopDummyModeAsync();
+				IsConnect = !_measurementController.IsModbusConnected;
+				IsStart = _measurementController.IsModbusConnected;
+
+				StatusText = "Ready";
+				StatusColor = "Green";
+			}
+		}
+
+		private async void OnMeasurementControllerErrorOccurred(object? sender, string e)
+		{
+			var box = MessageBoxManager
+				.GetMessageBoxStandard("Error", $"Error: {e}", ButtonEnum.Ok, Icon.Error);
+			await box.ShowAsync();
+		}
+
+		private async void OnMeasurementControllerMeasurementStarted(object? sender, EventArgs e)
+		{
+			var mode = _measurementController.IsDummyMode ? "Dummy Mode" : "Real Data";
+			var box = MessageBoxManager
+				.GetMessageBoxStandard("Info", $"Measurement Started ({mode})", ButtonEnum.Ok, Icon.Info);
+			await box.ShowAsync();
+		}
+
+		private async void OnMeasurementControllerMeasurementStopped(object? sender, EventArgs e)
+		{
+			var box = MessageBoxManager
+				.GetMessageBoxStandard("Info", "Measurement Stopped", ButtonEnum.Ok, Icon.Info);
+			await box.ShowAsync();
+
+			// Xuất CSV và tạo history record
+			await ExportDataAndCreateHistoryAsync();
+		}
+
+		private async Task ExportDataAndCreateHistoryAsync()
+		{
+			try
+			{
+				// Generate file path
+				var filePath = _reportExporter.GenerateDefaultFilePath();
+
+				// Export CSV
+				await _measurementController.ExportToCsvAsync(filePath);
+
+				// Create history record (now async)
+				var barcode = string.IsNullOrWhiteSpace(BarcodeText) ? "N/A" : BarcodeText.Trim();
+				var history = await _measurementController.CreateHistoryRecordAsync(barcode, filePath);
+
+				// Refresh history grid
+				RefreshHistoryGrid();
+
+				// Clear barcode textbox for next measurement
+				BarcodeText = "";
+
+				// Show storage location
+				var historyFilePath = _historyRepository.GetStorageFilePath();
+				var box = MessageBoxManager
+					.GetMessageBoxStandard("Export Success",
+						$"Data exported and history saved!\nResult: {history.Result}\n\nHistory stored at:\n{historyFilePath}",
+						ButtonEnum.Ok,
+						history.Result == "OK" ? Icon.Info : Icon.Warning);
+				await box.ShowAsync();
+			}
+			catch (InvalidOperationException ex) when (ex.Message.Contains("No measurements"))
+			{
+				// Không có dữ liệu, không lưu history
+			}
+			catch (Exception ex)
+			{
+				var box = MessageBoxManager
+					.GetMessageBoxStandard("Export failed:", $"Export Error: {ex}", ButtonEnum.Ok, Icon.Error);
+				await box.ShowAsync();
+			}
+		}
+
+		private void RefreshHistoryGrid()
+		{
+			HistoryRecords.Clear();
+
+			int ok = 0;
+			int ng = 0;
+
+			var histories = _measurementController.GetAllHistory();
+			foreach (var h in histories)
+			{
+				HistoryRecords.Add(new HistoryRecord
+				{
+					Id = h.Id,
+					StartTime = h.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
+					EndTime = h.EndTime.ToString("yyyy-MM-dd HH:mm:ss"),
+					Duration = h.Duration.ToString(@"hh\:mm\:ss"),
+					Barcode = h.Barcode,
+					Result = h.Result,
+					AvgVoltage = h.AverageVoltage,
+					AvgCurrent = h.AverageCurrent,
+					FilePath = Path.GetFileName(h.FilePath)
+				});
+
+				// Đếm OK / NG
+				if (h.Result.Equals("OK", StringComparison.OrdinalIgnoreCase))
+					ok++;
+				else
+					ng++;
+			}
+
+			OkCount = ok;
+			NgCount = ng;
+		}
+
+		private void OnMeasurementControllerNewDataRead(object? sender, NewDataReadEventArgs e)
+		{
+			// Update UI labels
+			Voltage = $"{e.Voltage:F2}";
+			Current = $"{e.Current:F2}";
+			UpdateAlarmStatus((int)e.AlarmStatus);
 
 
-        private async void OnMeasurementControllerErrorOccurred(object? sender, string e)
-        {
-            var box = MessageBoxManager
-                .GetMessageBoxStandard("Error", $"Error: {e}", ButtonEnum.Ok, Icon.Error);
-            await box.ShowAsync();
-        }
+			// Sửa thành AlarmStatus (thay vì Alarm)
+			Alarm = e.AlarmStatus; // <-- SỬA TỪ e.Alarm THÀNH e.AlarmStatus
 
-        private async void OnMeasurementControllerMeasurementStarted(object? sender, EventArgs e)
-        {
-            var mode = _measurementController.IsDummyMode ? "Dummy Mode" : "Real Data";
-            var box = MessageBoxManager
-                .GetMessageBoxStandard("Info", $"Measurement Started ({mode})", ButtonEnum.Ok, Icon.Info);
-            await box.ShowAsync();
-        }
+			// Sửa thành PowerSetting (thay vì Power)
+			Power = e.PowerSetting; // <-- SỬA TỪ e.Power THÀNH e.PowerSetting
 
-        private async void OnMeasurementControllerMeasurementStopped(object? sender, EventArgs e)
-        {
-            var box = MessageBoxManager
-                .GetMessageBoxStandard("Info", "Measurement Stopped", ButtonEnum.Ok, Icon.Info);
-            await box.ShowAsync();
+			// Cập nhật coil status với tên đúng
+			CoilDoorClose = e.IsDoorClosed;    // <-- IsDoorClosed
+			CoilDoorOpen = e.IsDoorOpened;     // <-- IsDoorOpened
+			CoilReady = e.IsReady;             // <-- IsReady
+			CoilRunning = e.IsRunning;         // <-- IsRunning
+			CoilStop = e.IsStopped;            // <-- IsStopped
 
-            // Xuất CSV và tạo history record
-            await ExportDataAndCreateHistoryAsync();
+			// Chỉ vẽ chart khi đang recording (từ Start đến Stop)
+			if (_isRecording)
+			{
+				// Thêm dữ liệu mới vào chart
+				_voltageValues.Add(e.Voltage);
+				_currentValues.Add(e.Current);
 
-            // Note: tabControl1 needs to be replaced with Avalonia equivalent
-            // tabControl1.SelectedIndex = 0;
-        }
-        private async Task ExportDataAndCreateHistoryAsync()
-        {
-            try
-            {
-                // Generate file path
-                var filePath = _reportExporter.GenerateDefaultFilePath();
+				// Cập nhật trục X để hiển thị toàn bộ dữ liệu
+				VoltageXAxes[0].MinLimit = 0;
+				VoltageXAxes[0].MaxLimit = _voltageValues.Count > 10 ? _voltageValues.Count : 10;
 
-                // Export CSV
-                await _measurementController.ExportToCsvAsync(filePath);
+				CurrentXAxes[0].MinLimit = 0;
+				CurrentXAxes[0].MaxLimit = _currentValues.Count > 10 ? _currentValues.Count : 10;
 
-                // Create history record (now async)
-                var barcode = string.IsNullOrWhiteSpace(BarcodeText) ? "N/A" : BarcodeText.Trim();
-                var history = await _measurementController.CreateHistoryRecordAsync(barcode, filePath);
+				// Tự động điều chỉnh trục Y cho Voltage
+				if (_voltageValues.Any())
+				{
+					var maxVoltage = _voltageValues.Max();
+					var minVoltage = _voltageValues.Min();
 
-                // Refresh history grid
-                RefreshHistoryGrid();
+					var range = maxVoltage - minVoltage;
+					const double minVoltageSpan = 0.5;
+					var padding = Math.Max(range * 0.1, minVoltageSpan);
 
-                // Clear barcode textbox for next measurement
-                BarcodeText = "";
+					var suggestedMin = Math.Floor(minVoltage - padding / 2.0);
+					suggestedMin = Math.Max(0, suggestedMin);
+					var suggestedMax = Math.Ceiling(maxVoltage + padding / 2.0);
 
-                // Show storage location
-                var historyFilePath = _historyRepository.GetStorageFilePath();
-                var box = MessageBoxManager
-                    .GetMessageBoxStandard("Export Success", 
-                        $"Data exported and history saved!\nResult: {history.Result}\n\nHistory stored at:\n{historyFilePath}", 
-                        ButtonEnum.Ok, 
-                        history.Result == "OK" ? Icon.Info : Icon.Warning);
-                await box.ShowAsync();
-            }
-            catch (InvalidOperationException ex) when (ex.Message.Contains("No measurements"))
-            {
-                // Không có dữ liệu, không lưu history
-            }
-            catch (Exception ex)
-            {
-                var box = MessageBoxManager
-                    .GetMessageBoxStandard("Export failed:", $"Export Error: {ex}", ButtonEnum.Ok, Icon.Error);
-                await box.ShowAsync();
-            }
-        }
+					if (suggestedMax <= suggestedMin)
+					{
+						suggestedMax = suggestedMin + minVoltageSpan;
+					}
 
-        private void RefreshHistoryGrid()
-        {
-            HistoryRecords.Clear();
-            var histories = _measurementController.GetAllHistory();
-            foreach (var h in histories)
-            {
-                HistoryRecords.Add(new HistoryRecord
-                {
-                    Id = h.Id,
-                    StartTime = h.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                    EndTime = h.EndTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Duration = h.Duration.ToString(@"hh\:mm\:ss"),
-                    Barcode = h.Barcode,
-                    Result = h.Result,
-                    AvgVoltage = h.AverageVoltage,
-                    AvgCurrent = h.AverageCurrent,
-                    FilePath = Path.GetFileName(h.FilePath)
-                });
-            }
-        }
+					VoltageYAxes[0].MinLimit = suggestedMin;
+					VoltageYAxes[0].MaxLimit = suggestedMax;
+				}
+				else
+				{
+					VoltageYAxes[0].MinLimit = 0;
+					VoltageYAxes[0].MaxLimit = 350;
+				}
 
-        private void OnMeasurementControllerNewDataRead(object? sender, NewDataReadEventArgs e)
-        {
-            // Update UI labels
-            Voltage = $"{e.Voltage:F2}";
-            Current = $"{e.Current:F2}";
+				// Tự động điều chỉnh trục Y cho Current
+				if (_currentValues.Any())
+				{
+					var maxCurrent = _currentValues.Max();
+					var minCurrent = _currentValues.Min();
 
-            // Chỉ vẽ chart khi đang recording (từ Start đến Stop)
-            if (_isRecording)
-            {
-                // Thêm dữ liệu mới vào chart
-                _voltageValues.Add(e.Voltage);
-                _currentValues.Add(e.Current);
+					var range = maxCurrent - minCurrent;
+					const double minCurrentSpan = 0.5;
+					var padding = Math.Max(range * 0.1, minCurrentSpan);
 
-                // Cập nhật trục X để hiển thị toàn bộ dữ liệu
-                VoltageXAxes[0].MinLimit = 0;
-                VoltageXAxes[0].MaxLimit = _voltageValues.Count > 10 ? _voltageValues.Count : 10;
-                
-                CurrentXAxes[0].MinLimit = 0;
-                CurrentXAxes[0].MaxLimit = _currentValues.Count > 10 ? _currentValues.Count : 10;
+					var suggestedMin = Math.Floor(minCurrent - padding / 2.0);
+					suggestedMin = Math.Max(0, suggestedMin);
+					var suggestedMax = Math.Ceiling(maxCurrent + padding / 2.0);
 
-                // Tự động điều chỉnh trục Y nếu cần
-                if (_voltageValues.Any())
-                {
-                    var maxVoltage = _voltageValues.Max();
-                    var minVoltage = _voltageValues.Min();
-                    
-                    VoltageYAxes[0].MinLimit = Math.Max(0, minVoltage * 0.9);
-                    VoltageYAxes[0].MaxLimit = maxVoltage * 1.1;
-                }
+					if (suggestedMax <= suggestedMin)
+					{
+						suggestedMax = suggestedMin + minCurrentSpan;
+					}
 
-                if (_currentValues.Any())
-                {
-                    var maxCurrent = _currentValues.Max();
-                    var minCurrent = _currentValues.Min();
-                    
-                    CurrentYAxes[0].MinLimit = Math.Max(0, minCurrent * 0.9);
-                    CurrentYAxes[0].MaxLimit = maxCurrent * 1.1;
-                }
-            }
-        }
+					CurrentYAxes[0].MinLimit = suggestedMin;
+					CurrentYAxes[0].MaxLimit = suggestedMax;
+				}
+				else
+				{
+					CurrentYAxes[0].MinLimit = 0;
+					CurrentYAxes[0].MaxLimit = 5;
+				}
+			}
+		}
 
-        private void ClearChart()
-        {
-            _voltageValues.Clear();
-            _currentValues.Clear();
-            _chartTimeCounter = 0;
-            
-            // Reset trục X
-            VoltageXAxes[0].MinLimit = 0;
-            VoltageXAxes[0].MaxLimit = 10;
-            CurrentXAxes[0].MinLimit = 0;
-            CurrentXAxes[0].MaxLimit = 10;
-            
-            // Reset trục Y về giá trị mặc định
-            VoltageYAxes[0].MaxLimit = 350;
-            CurrentYAxes[0].MaxLimit = 5;
-        }
-    }
+		private void ClearChart()
+		{
+			_voltageValues.Clear();
+			_currentValues.Clear();
+			_chartTimeCounter = 0;
 
+			// Reset trục X
+			VoltageXAxes[0].MinLimit = 0;
+			VoltageXAxes[0].MaxLimit = 10;
+			CurrentXAxes[0].MinLimit = 0;
+			CurrentXAxes[0].MaxLimit = 10;
+
+			// Reset trục Y về giá trị mặc định
+			VoltageYAxes[0].MinLimit = 0;
+			VoltageYAxes[0].MaxLimit = 350;
+			CurrentYAxes[0].MinLimit = 0;
+			CurrentYAxes[0].MaxLimit = 5;
+		}
+		private int _alarmStatus;
+
+		private void UpdateAlarmStatus(int alarmStatus)
+		{
+			if (_alarmStatus == alarmStatus)
+				return;
+
+			_alarmStatus = alarmStatus;
+			alarmRecords.Clear();
+
+			if (_alarmStatus == 0)
+			{
+				alarmRecords.Add(new AlarmRecord
+				{
+					No = 1,
+					NameAlarm = "No Alarm",
+					Status = "Đã hết lỗi",
+					StatusColor = "Lime",
+					StatusFontWeight = "Bold",
+					Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+				});
+				return;
+			}
+
+			if ((_alarmStatus & 1) == 1)
+				AddAlarm("Overcurrent");
+
+			if ((_alarmStatus & 2) == 2)
+				AddAlarm("Overtemperature");
+
+			if ((_alarmStatus & 4) == 4)
+				AddAlarm("Overvoltage");
+			if ((_alarmStatus & 8) == 8)
+				AddAlarm("Undervoltage");
+			if ((_alarmStatus & 16) == 16)
+				AddAlarm ("Air Pressure");
+			if ((_alarmStatus & 32) == 32)
+				AddAlarm(("Open Circuit"));
+			if ((_alarmStatus & 64) == 64)
+				AddAlarm("IGBT1 Overcurrent ");
+			if ((_alarmStatus & 128) == 128)
+				AddAlarm("IGBT2 Overcurrent");
+			if ((_alarmStatus & 256) == 256)
+				AddAlarm("Inverter overcurrent");
+			if ((_alarmStatus & 512) == 512)
+				AddAlarm("No arcing alarm");
+			if ((_alarmStatus & 1024) == 1024)
+				AddAlarm("Motor non - rotation alarm");
+		}
+
+		private void AddAlarm(string name)
+		{
+			alarmRecords.Add(new AlarmRecord
+			{
+				No = alarmRecords.Count + 1,
+				NameAlarm = name,
+				Status = "Bị lỗi",
+				StatusColor = "Red",
+				StatusFontWeight = "Bold",
+				Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+			});
+		}
+
+
+	}
+
+	public class AlarmRecord
+	{
+		public int No { get; set; }
+		public string NameAlarm { get; set; } = "";
+		public string Status { get; set; } = "";
+		public string StatusColor { get; set; } = "Green";
+		public string StatusFontWeight { get; set; } = "Bold";
+		public string Timestamp { get; set; } = "";
+	}
 	// Model class cho History Record
 	public class HistoryRecord
 	{
@@ -512,4 +663,6 @@ namespace Flasma_IOT_01.ViewModels
 		public double AvgCurrent { get; set; }
 		public string FilePath { get; set; } = string.Empty;
 	}
+
+
 }
