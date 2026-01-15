@@ -97,6 +97,10 @@ namespace Flasma_IOT_01.ViewModels
 		[ObservableProperty]
 		private int ngCount;
 
+		[ObservableProperty]
+		private ObservableCollection<AlarmRecord> alarmRecords = new();
+
+
 		private readonly MeasurementController _measurementController;
 		private readonly ModbusTcpClient _modbusClient;
 		private readonly DataSampler _dataSampler;
@@ -465,6 +469,8 @@ namespace Flasma_IOT_01.ViewModels
 			// Update UI labels
 			Voltage = $"{e.Voltage:F2}";
 			Current = $"{e.Current:F2}";
+			UpdateAlarmStatus((int)e.AlarmStatus);
+
 
 			// Sửa thành AlarmStatus (thay vì Alarm)
 			Alarm = e.AlarmStatus; // <-- SỬA TỪ e.Alarm THÀNH e.AlarmStatus
@@ -569,8 +575,81 @@ namespace Flasma_IOT_01.ViewModels
 			CurrentYAxes[0].MinLimit = 0;
 			CurrentYAxes[0].MaxLimit = 5;
 		}
+		private int _alarmStatus;
+
+		private void UpdateAlarmStatus(int alarmStatus)
+		{
+			if (_alarmStatus == alarmStatus)
+				return;
+
+			_alarmStatus = alarmStatus;
+			alarmRecords.Clear();
+
+			if (_alarmStatus == 0)
+			{
+				alarmRecords.Add(new AlarmRecord
+				{
+					No = 1,
+					NameAlarm = "No Alarm",
+					Status = "Đã hết lỗi",
+					StatusColor = "Lime",
+					StatusFontWeight = "Bold",
+					Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+				});
+				return;
+			}
+
+			if ((_alarmStatus & 1) == 1)
+				AddAlarm("Overcurrent");
+
+			if ((_alarmStatus & 2) == 2)
+				AddAlarm("Overtemperature");
+
+			if ((_alarmStatus & 4) == 4)
+				AddAlarm("Overvoltage");
+			if ((_alarmStatus & 8) == 8)
+				AddAlarm("Undervoltage");
+			if ((_alarmStatus & 16) == 16)
+				AddAlarm ("Air Pressure");
+			if ((_alarmStatus & 32) == 32)
+				AddAlarm(("Open Circuit"));
+			if ((_alarmStatus & 64) == 64)
+				AddAlarm("IGBT1 Overcurrent ");
+			if ((_alarmStatus & 128) == 128)
+				AddAlarm("IGBT2 Overcurrent");
+			if ((_alarmStatus & 256) == 256)
+				AddAlarm("Inverter overcurrent");
+			if ((_alarmStatus & 512) == 512)
+				AddAlarm("No arcing alarm");
+			if ((_alarmStatus & 1024) == 1024)
+				AddAlarm("Motor non - rotation alarm");
+		}
+
+		private void AddAlarm(string name)
+		{
+			alarmRecords.Add(new AlarmRecord
+			{
+				No = alarmRecords.Count + 1,
+				NameAlarm = name,
+				Status = "Bị lỗi",
+				StatusColor = "Red",
+				StatusFontWeight = "Bold",
+				Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+			});
+		}
+
+
 	}
 
+	public class AlarmRecord
+	{
+		public int No { get; set; }
+		public string NameAlarm { get; set; } = "";
+		public string Status { get; set; } = "";
+		public string StatusColor { get; set; } = "Green";
+		public string StatusFontWeight { get; set; } = "Bold";
+		public string Timestamp { get; set; } = "";
+	}
 	// Model class cho History Record
 	public class HistoryRecord
 	{
@@ -584,4 +663,6 @@ namespace Flasma_IOT_01.ViewModels
 		public double AvgCurrent { get; set; }
 		public string FilePath { get; set; } = string.Empty;
 	}
+
+
 }
