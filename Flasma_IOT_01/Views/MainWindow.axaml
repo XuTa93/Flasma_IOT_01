@@ -52,7 +52,6 @@
     </Grid>
 </TabItem>
 
-
             <!-- ================= CHART TAB ================= -->
             <TabItem Header="Chart">
                 <!-- Gi? nguyên ph?n Chart -->
@@ -125,6 +124,46 @@
                 </Border>
             </TabItem>
 
+            <!-- ================= ALARM TAB ================= -->
+<!-- ================= ALARM TAB ================= -->
+<TabItem Header="Alarm">
+    <Grid RowDefinitions="*">
+        
+        <dataGrid:DataGrid
+            x:CompileBindings="False"
+            ItemsSource="{Binding AlarmRecords}"
+            AutoGenerateColumns="False"
+            HeadersVisibility="Column"
+            GridLinesVisibility="All"
+            BorderThickness="1"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            ColumnWidth="*">
+
+            <dataGrid:DataGrid.Columns>
+                <dataGrid:DataGridTextColumn Header="No." Binding="{Binding No}" Width="80"/>
+                <dataGrid:DataGridTextColumn Header="Name Alarm" Binding="{Binding NameAlarm}" Width="*"/>
+                
+                <!-- Status Column with Template -->
+                <dataGrid:DataGridTemplateColumn Header="Status" Width="150">
+                    <dataGrid:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Status}" 
+                                       Foreground="{Binding StatusColor}"
+                                       FontWeight="{Binding StatusFontWeight}"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Center"/>
+                        </DataTemplate>
+                    </dataGrid:DataGridTemplateColumn.CellTemplate>
+                </dataGrid:DataGridTemplateColumn>
+                
+                <dataGrid:DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="180"/>
+            </dataGrid:DataGrid.Columns>
+
+        </dataGrid:DataGrid>
+
+    </Grid>
+</TabItem>
         </TabControl>
 
         <!-- ================= CONTROL PANEL ================= -->

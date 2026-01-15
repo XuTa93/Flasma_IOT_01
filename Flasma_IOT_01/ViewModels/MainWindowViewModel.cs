@@ -111,6 +111,7 @@ namespace Flasma_IOT_01.ViewModels
 		// Collections để lưu dữ liệu chart
 		private readonly ObservableCollection<double> _voltageValues = new();
 		private readonly ObservableCollection<double> _currentValues = new();
+
 		private double _chartTimeCounter = 0;
 		private const int MaxDataPoints = 100; // Giới hạn số điểm hiển thị
 
@@ -302,8 +303,9 @@ namespace Flasma_IOT_01.ViewModels
 			{
 				IpAddress = "192.168.1.13",
 				Port = 505,
-				VoltageRegisterAddress = 0,
-				CurrentRegisterAddress = 1,
+				VoltageRegisterAddress = 3,
+				CurrentRegisterAddress = 4,
+				AlarmRegisterAddress = 7,
 				SamplingIntervalMs = 1000,
 				TimeoutMs = 5000,
 				RetryCount = 3
@@ -463,6 +465,19 @@ namespace Flasma_IOT_01.ViewModels
 			// Update UI labels
 			Voltage = $"{e.Voltage:F2}";
 			Current = $"{e.Current:F2}";
+
+			// Sửa thành AlarmStatus (thay vì Alarm)
+			Alarm = e.AlarmStatus; // <-- SỬA TỪ e.Alarm THÀNH e.AlarmStatus
+
+			// Sửa thành PowerSetting (thay vì Power)
+			Power = e.PowerSetting; // <-- SỬA TỪ e.Power THÀNH e.PowerSetting
+
+			// Cập nhật coil status với tên đúng
+			CoilDoorClose = e.IsDoorClosed;    // <-- IsDoorClosed
+			CoilDoorOpen = e.IsDoorOpened;     // <-- IsDoorOpened
+			CoilReady = e.IsReady;             // <-- IsReady
+			CoilRunning = e.IsRunning;         // <-- IsRunning
+			CoilStop = e.IsStopped;            // <-- IsStopped
 
 			// Chỉ vẽ chart khi đang recording (từ Start đến Stop)
 			if (_isRecording)
