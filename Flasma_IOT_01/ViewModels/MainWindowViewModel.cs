@@ -97,7 +97,9 @@ namespace Flasma_IOT_01.ViewModels
 		[ObservableProperty]
 		private int ngCount;
 
-		[ObservableProperty]
+		private bool _startMeasurering = false;
+
+        [ObservableProperty]
 		private ObservableCollection<AlarmRecord> alarmRecords = new();
 
 
@@ -116,9 +118,6 @@ namespace Flasma_IOT_01.ViewModels
 		private readonly ObservableCollection<double> _voltageValues = new();
 		private readonly ObservableCollection<double> _currentValues = new();
 
-		private double _chartTimeCounter = 0;
-		private const int MaxDataPoints = 100; // Giới hạn số điểm hiển thị
-
 		public MainWindowViewModel()
 		{
 			_modbusClient = new ModbusTcpClient();
@@ -133,12 +132,13 @@ namespace Flasma_IOT_01.ViewModels
 				_reportExporter,
 				_historyRepository);
 
-			// Subscribe to the NewDataRead event
-			_measurementController.NewDataRead += OnMeasurementControllerNewDataRead;
-			_measurementController.ErrorOccurred += OnMeasurementControllerErrorOccurred;
-			_measurementController.MeasurementStarted += OnMeasurementControllerMeasurementStarted;
-			_measurementController.MeasurementStopped += OnMeasurementControllerMeasurementStopped;
-			_measurementController.ConnectionStatusChanged += MeasurementController_ConnectionStatusChanged;
+            // Subscribe to the NewDataRead event
+            _measurementController.NewSignalReceived += OnNewSignalReceived;
+            _measurementController.NewDataRead += OnMeasurementNewDataRead;
+			_measurementController.ErrorOccurred += OnMeasurementErrorOccurred;
+			_measurementController.MeasurementStarted += OnMeasurementMeasurementStarted;
+			_measurementController.MeasurementStopped += OnMeasurementMeasurementStopped;
+			_measurementController.ConnectionStatusChanged += OnMeasurementConnectionStatusChanged;
 
 			if (Design.IsDesignMode)
 				return;
@@ -236,7 +236,7 @@ namespace Flasma_IOT_01.ViewModels
 			};
 		}
 
-		private void MeasurementController_ConnectionStatusChanged(object? sender, bool e)
+		private void OnMeasurementConnectionStatusChanged(object? sender, bool e)
 		{
 			if (!IsDummy)
 			{
@@ -281,7 +281,7 @@ namespace Flasma_IOT_01.ViewModels
 
 			// Cập nhật status
 			StatusText = "Recording...";
-			StatusColor = "Red";
+			StatusColor = "Blue";
 
 			_measurementController.StartMeasurementAsync();
 		}
@@ -305,12 +305,19 @@ namespace Flasma_IOT_01.ViewModels
 			// Thực hiện hành động khi nút được nhấn
 			var settings = new ModbusConnectionSettings
 			{
-				IpAddress = "192.168.1.13",
-				Port = 505,
+				IpAddress = "127.0.0.1",
+				Port = 502,
 				VoltageRegisterAddress = 3,
 				CurrentRegisterAddress = 4,
+				PowerRegisterAddress = 5,
 				AlarmRegisterAddress = 7,
-				SamplingIntervalMs = 1000,
+				CoilDoorCloseRegisterAddress = 0,
+				CoilDoorOpenRegisterAddress =1,
+                CoilReadyRegisterAddress = 2,
+                CoilRunningRegisterAddress = 3,
+                CoilStartRegisterAddress = 4,
+                CoilStopRegisterAddress = 5,
+                SamplingIntervalMs = 1000,
 				TimeoutMs = 5000,
 				RetryCount = 3
 			};
@@ -364,14 +371,14 @@ namespace Flasma_IOT_01.ViewModels
 			}
 		}
 
-		private async void OnMeasurementControllerErrorOccurred(object? sender, string e)
+		private async void OnMeasurementErrorOccurred(object? sender, string e)
 		{
 			var box = MessageBoxManager
 				.GetMessageBoxStandard("Error", $"Error: {e}", ButtonEnum.Ok, Icon.Error);
 			await box.ShowAsync();
 		}
 
-		private async void OnMeasurementControllerMeasurementStarted(object? sender, EventArgs e)
+		private async void OnMeasurementMeasurementStarted(object? sender, EventArgs e)
 		{
 			var mode = _measurementController.IsDummyMode ? "Dummy Mode" : "Real Data";
 			var box = MessageBoxManager
@@ -379,7 +386,7 @@ namespace Flasma_IOT_01.ViewModels
 			await box.ShowAsync();
 		}
 
-		private async void OnMeasurementControllerMeasurementStopped(object? sender, EventArgs e)
+		private async void OnMeasurementMeasurementStopped(object? sender, EventArgs e)
 		{
 			var box = MessageBoxManager
 				.GetMessageBoxStandard("Info", "Measurement Stopped", ButtonEnum.Ok, Icon.Info);
@@ -463,27 +470,42 @@ namespace Flasma_IOT_01.ViewModels
 			OkCount = ok;
 			NgCount = ng;
 		}
+        
+        private void OnNewSignalReceived(object? sender, NewSignalEventArgs e)
+		{
 
-		private void OnMeasurementControllerNewDataRead(object? sender, NewDataReadEventArgs e)
+            // Cập nhật coil status với tên đúng
+            CoilDoorClose = e.IsDoorClosed;    // <-- IsDoorClosed
+            CoilDoorOpen = e.IsDoorOpened;     // <-- IsDoorOpened
+            CoilReady = e.IsReady;             // <-- IsReady
+            CoilRunning = e.IsRunning;         // <-- IsRunning
+            CoilStop = e.IsStopped;            // <-- IsStopped
+            _startMeasurering = e.IsStart;     // <-- IsStart
+
+			if (_startMeasurering && _isRecording == false)
+			{
+				ClearChart();
+                OnButtonStartPressed();
+            }
+			if (CoilStop && _isRecording)
+			{
+				OnButtonStopPressed();
+            }
+
+            UpdateAlarmStatus((int)e.AlarmStatus);
+
+            // Sửa thành AlarmStatus (thay vì Alarm)
+            Alarm = e.AlarmStatus; // <-- SỬA TỪ e.Alarm THÀNH e.AlarmStatus
+
+            // Sửa thành PowerSetting (thay vì Power)
+            Power = e.PowerSetting; // <-- SỬA TỪ e.Power THÀNH e.PowerSetting
+        }
+        private void OnMeasurementNewDataRead(object? sender, NewDataReadEventArgs e)
 		{
 			// Update UI labels
 			Voltage = $"{e.Voltage:F2}";
 			Current = $"{e.Current:F2}";
-			UpdateAlarmStatus((int)e.AlarmStatus);
 
-
-			// Sửa thành AlarmStatus (thay vì Alarm)
-			Alarm = e.AlarmStatus; // <-- SỬA TỪ e.Alarm THÀNH e.AlarmStatus
-
-			// Sửa thành PowerSetting (thay vì Power)
-			Power = e.PowerSetting; // <-- SỬA TỪ e.Power THÀNH e.PowerSetting
-
-			// Cập nhật coil status với tên đúng
-			CoilDoorClose = e.IsDoorClosed;    // <-- IsDoorClosed
-			CoilDoorOpen = e.IsDoorOpened;     // <-- IsDoorOpened
-			CoilReady = e.IsReady;             // <-- IsReady
-			CoilRunning = e.IsRunning;         // <-- IsRunning
-			CoilStop = e.IsStopped;            // <-- IsStopped
 
 			// Chỉ vẽ chart khi đang recording (từ Start đến Stop)
 			if (_isRecording)
@@ -561,7 +583,6 @@ namespace Flasma_IOT_01.ViewModels
 		{
 			_voltageValues.Clear();
 			_currentValues.Clear();
-			_chartTimeCounter = 0;
 
 			// Reset trục X
 			VoltageXAxes[0].MinLimit = 0;
@@ -583,11 +604,11 @@ namespace Flasma_IOT_01.ViewModels
 				return;
 
 			_alarmStatus = alarmStatus;
-			alarmRecords.Clear();
+			AlarmRecords.Clear();
 
 			if (_alarmStatus == 0)
 			{
-				alarmRecords.Add(new AlarmRecord
+				AlarmRecords.Add(new AlarmRecord
 				{
 					No = 1,
 					NameAlarm = "No Alarm",
@@ -627,9 +648,9 @@ namespace Flasma_IOT_01.ViewModels
 
 		private void AddAlarm(string name)
 		{
-			alarmRecords.Add(new AlarmRecord
+			AlarmRecords.Add(new AlarmRecord
 			{
-				No = alarmRecords.Count + 1,
+				No = AlarmRecords.Count + 1,
 				NameAlarm = name,
 				Status = "Bị lỗi",
 				StatusColor = "Red",

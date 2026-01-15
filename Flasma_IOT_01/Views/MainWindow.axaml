@@ -169,7 +169,7 @@
         <!-- ================= CONTROL PANEL ================= -->
         <Grid Grid.Row="1"
               Margin="10"
-              ColumnDefinitions="*,Auto"
+              ColumnDefinitions="*,350"
               RowDefinitions="Auto,Auto"
               ColumnSpacing="20">
 
@@ -181,80 +181,95 @@
             </StackPanel>
 
             <!-- RIGHT STATUS -->
-<StackPanel Grid.Column="1"
-            Orientation="Vertical"
-            Spacing="8">
+            <StackPanel Grid.Column="1"
+                Orientation="Vertical"
+                Spacing="8">
 
-    <!-- STATUS -->
-    <StackPanel Orientation="Horizontal" Spacing="10">
-        <Border Background="{Binding StatusColor}" 
-                CornerRadius="3"
-                Padding="8,4"
-                VerticalAlignment="Center">
-            <TextBlock Text="{Binding StatusText}" 
-                       FontWeight="Bold"
-                       Foreground="White"/>
-        </Border>
+                <!-- STATUS -->
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Background="{Binding StatusColor}" 
+                            CornerRadius="3"
+                            Padding="8,4"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{Binding StatusText}" 
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+                    </Border>
 
-        <CheckBox Content="Dummy Mode (Test)"
-                  IsChecked="{Binding IsDummy, Mode=TwoWay}"/>
-    </StackPanel>
+                    <CheckBox Content="Dummy Mode (Test)"
+                              IsChecked="{Binding IsDummy, Mode=TwoWay}"/>
+                </StackPanel>
 
-    <!-- ===== RESULT SUMMARY ===== -->
-    <Border BorderBrush="#555"
-            BorderThickness="1"
-            CornerRadius="4"
-            Padding="8"
-            Background="#1F1F1F">
-
-        <Grid ColumnDefinitions="Auto,Auto"
-              RowDefinitions="Auto,Auto"
-              ColumnSpacing="20"
-              RowSpacing="6">
-
-            <TextBlock Text="OK"
-                       Foreground="Lime"
-                       FontWeight="Bold"/>
-
-            <TextBlock Grid.Column="1"
-                       Text="{Binding OkCount}"
-                       Foreground="Lime"
-                       FontWeight="Bold"
-                       HorizontalAlignment="Right"/>
-
-            <TextBlock Grid.Row="1"
-                       Text="NG"
-                       Foreground="Red"
-                       FontWeight="Bold"/>
-
-            <TextBlock Grid.Row="1"
-                       Grid.Column="1"
-                       Text="{Binding NgCount}"
-                       Foreground="Red"
-                       FontWeight="Bold"
-                       HorizontalAlignment="Right"/>
-        </Grid>
-    </Border>
-</StackPanel>
+            </StackPanel>
 
 
             <!-- BUTTONS -->
-            <StackPanel Grid.Row="1"
-                        Orientation="Horizontal"
-                        Spacing="10">
-
-                <Button Content="Connect" Command="{Binding ButtonConnectPressedCommand}" IsEnabled="{Binding IsConnect}"/>
-                <Button Content="DisConnect" Command="{Binding ButtonDisconnectPressedCommand}" IsEnabled="{Binding IsDisConnect}"/>
-                <Button Content="Start" Command="{Binding ButtonStartPressedCommand}" IsEnabled="{Binding IsStart}"/>
-                <Button Content="Stop" Command="{Binding ButtonStopPressedCommand}" IsEnabled="{Binding IsStop}"/>
-
-                <TextBlock Text="Barcode"
+                <StackPanel Orientation="Horizontal"
+                            Grid.Row="1"
+                            Spacing="10">
+                    <Button Content="Connect" Command="{Binding ButtonConnectPressedCommand}" IsEnabled="{Binding IsConnect}"/>
+                    <Button Content="DisConnect" Command="{Binding ButtonDisconnectPressedCommand}" IsEnabled="{Binding IsDisConnect}"/>
+                    <Button Content="Start" Command="{Binding ButtonStartPressedCommand}" IsEnabled="{Binding IsStart}"/>
+                    <Button Content="Stop" Command="{Binding ButtonStopPressedCommand}" IsEnabled="{Binding IsStop}"/>
+                    <TextBlock Text="Barcode"
                            VerticalAlignment="Center"
                            Margin="20,0,0,0"/>
-
-                <TextBox Width="150" Text="{Binding BarcodeText}"
+                    <TextBox Width="150" Text="{Binding BarcodeText}"
                          Watermark="Code text"/>
-            </StackPanel>
+               </StackPanel>
+
+                <StackPanel Grid.Column="1" Grid.Row="1" 
+                            Orientation="Horizontal"
+                            Spacing="5"
+                        HorizontalAlignment="Right">
+                                                    <!-- ===== RESULT SUMMARY ===== -->
+                <Border BorderBrush="#555"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="8"
+                        Grid.Column="0"
+                        Background="#1F1F1F">
+
+                    <Grid ColumnDefinitions="Auto,Auto"
+                          ColumnSpacing="20"
+                          RowSpacing="6">
+
+                        <TextBlock Text="OK"
+                                   Foreground="Lime"
+                                   FontWeight="Bold"/>
+
+                        <TextBlock Grid.Column="1"
+                                   MinWidth="50"
+                                   Text="{Binding OkCount}"
+                                   Foreground="Lime"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Right"/>
+                    </Grid>
+                </Border>
+                <Border BorderBrush="#555"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="8"
+                        Grid.Column="1"
+                        Background="#1F1F1F">
+
+                    <Grid ColumnDefinitions="Auto,Auto"
+                          ColumnSpacing="20"
+                          RowSpacing="6">
+                        <TextBlock Grid.Column="0"
+                                   Text="NG"
+                                   Foreground="Red"
+                                   FontWeight="Bold"/>
+
+                        <TextBlock Grid.Column="1"
+                                   MinWidth="50"
+                                   Text="{Binding NgCount}"
+                                   Foreground="Red"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Right"/>
+                    </Grid>
+                </Border>
+                    </StackPanel>
 
         </Grid>
 

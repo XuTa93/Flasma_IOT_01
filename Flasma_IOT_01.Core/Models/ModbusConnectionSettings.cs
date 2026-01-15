@@ -54,6 +54,7 @@ public class ModbusConnectionSettings
     public ushort CoilDoorOpenRegisterAddress { get; set; } = 1;
     public ushort CoilReadyRegisterAddress { get; set; } = 2;
     public ushort CoilRunningRegisterAddress { get; set; } = 3;
-    public ushort CoilStopRegisterAddress { get; set; } = 4;
+    public ushort CoilStartRegisterAddress { get; set; } = 4;
+    public ushort CoilStopRegisterAddress { get; set; } = 5;
 
 }

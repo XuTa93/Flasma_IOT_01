@@ -25,7 +25,7 @@ public class MeasurementController
     private bool _lastCoilReady = false;
     private bool _lastCoilRunning = false;
     private bool _lastCoilStopped = false;
-
+    private bool _lastCoilStart = false;
     private bool _isRunning = false;
     private bool _isDummyMode = false;
     private int _reconnectAttempts = 0;
@@ -40,6 +40,7 @@ public class MeasurementController
     public event EventHandler? MeasurementStopped;
     public event EventHandler<string>? ErrorOccurred;
     public event EventHandler<NewDataReadEventArgs>? NewDataRead;
+    public event EventHandler<NewSignalEventArgs>? NewSignalReceived;
     public event EventHandler<bool>? ConnectionStatusChanged;
 
     public bool IsModbusConnected => _modbusClient.IsConnected;
@@ -132,15 +133,19 @@ public class MeasurementController
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(1000, cancellationToken);
+                await Task.Delay(200, cancellationToken);
 
                 try
                 {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        await Task.Delay(200, cancellationToken);
+                    }
                     _lastVoltage = _dummyDataGenerator.GenerateVoltage();
                     _lastCurrent = _dummyDataGenerator.GenerateCurrent();
 
                     // Invoke the NewDataRead event
-                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent, _lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStopped  ));
+                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
                 }
                 catch (Exception ex)
                 {
@@ -260,7 +265,7 @@ public class MeasurementController
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(1000, cancellationToken);
+                await Task.Delay(200, cancellationToken);
 
                 NotifyConnectionStatusChangedIfNeeded(_modbusClient.IsConnected);
 
@@ -274,29 +279,30 @@ public class MeasurementController
                 }
 
                 _reconnectAttempts = 0;
-
                 try
                 {
+                    _lastPower = await ReadPowerAsync(_modbusSettings);
+                    _alarmStatus = await ReadAlarmAsync(_modbusSettings);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        await Task.Delay(200, cancellationToken);
+                        _lastCoilDoorClose = await ReadCoilDoorCloseAsync(_modbusSettings);
+                        _lastCoilDoorOpen = await ReadCoilDoorOpenAsync(_modbusSettings);
+                        _lastCoilReady = await ReadCoilReadyAsync(_modbusSettings);
+                        _lastCoilRunning = await ReadCoilRunningAsync(_modbusSettings);
+                        _lastCoilStart = await ReadCoilStartAsync(_modbusSettings);
+                        _lastCoilStopped = await ReadCoilStopAsync(_modbusSettings);
+                        NewSignalReceived?.Invoke(this, new NewSignalEventArgs(_lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStart, _lastCoilStopped));
+                    }
                     _lastVoltage = await ReadVoltageAsync(_modbusSettings);
                     _lastCurrent = await ReadCurrentAsync(_modbusSettings);
-                    _alarmStatus = await ReadAlarmAsync(_modbusSettings);
-                    _lastPower = await ReadPowerAsync(_modbusSettings);
-                    _lastCoilDoorClose = await ReadCoilDoorCloseAsync(_modbusSettings);
-                    _lastCoilDoorOpen = await ReadCoilDoorOpenAsync(_modbusSettings);
-                    _lastCoilReady = await ReadCoilReadyAsync(_modbusSettings);
-                    _lastCoilRunning = await ReadCoilRunningAsync(_modbusSettings);
-                    _lastCoilStopped = await ReadCoilStopAsync(_modbusSettings);
-
-                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent, _lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStopped));
+                    NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent));
                 }
                 catch (Exception ex)
                 {
                     ErrorOccurred?.Invoke(this, $"Background read error: {ex.Message}");
                 }
             }
-        }
-        catch (OperationCanceledException)
-        {
         }
         catch (Exception ex)
         {
@@ -316,7 +322,6 @@ public class MeasurementController
 
             var measurement = new Measurement(_lastVoltage, _lastCurrent);
             _dataRepository.AddMeasurement(measurement);
-            NewDataRead?.Invoke(this, new NewDataReadEventArgs(_lastVoltage, _lastCurrent, _lastPower, _alarmStatus, _lastCoilDoorClose, _lastCoilDoorOpen, _lastCoilReady, _lastCoilRunning, _lastCoilStopped  ));
         }
         catch (Exception ex)
         {
@@ -416,6 +421,10 @@ public class MeasurementController
     public async Task<bool> ReadCoilStopAsync(ModbusConnectionSettings settings)
     {
         return await ReadCoilAsync(settings, settings.CoilStopRegisterAddress);
+    }
+    public async Task<bool> ReadCoilStartAsync(ModbusConnectionSettings settings)
+    {
+        return await ReadCoilAsync(settings, settings.CoilStartRegisterAddress);
     }
 
     public async Task WriteCoilAsync(ModbusConnectionSettings settings, ushort address, bool value)

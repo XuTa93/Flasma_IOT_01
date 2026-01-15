@@ -2,7 +2,6 @@
 using Flasma_IOT_01.Core.Controllers;
 using Flasma_IOT_01.Core.Models;
 using Flasma_IOT_01.Core.Services;
-using Flasma_IOT_01.Core.Examples;
 
 Console.WriteLine("╔════════════════════════════════════════════════════════════╗");
 Console.WriteLine("║    IoT Measurement System - Modbus TCP Test Suite         ║");
@@ -14,7 +13,6 @@ Console.WriteLine("2. Continuous Read Test (10 reads)");
 Console.WriteLine("3. Write & Verify Test");
 Console.WriteLine("4. Basic Modbus Test (All features)");
 Console.WriteLine("5. Advanced Modbus Test (Error handling)");
-Console.WriteLine("6. CSV Export Examples (Demo only, no Modbus)");
 Console.WriteLine();
 Console.Write("Enter your choice (1-7): ");
 
@@ -44,10 +42,6 @@ try
 
         case "5":
             await TestModbus.RunAdvancedTestAsync();
-            break;
-
-        case "6":
-            await CsvExporterExamples.RunAllExamples();
             break;
 
         default:

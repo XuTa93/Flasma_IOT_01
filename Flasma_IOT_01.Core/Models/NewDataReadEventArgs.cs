@@ -7,10 +7,20 @@ namespace Flasma_IOT_01.Core.Models
     {
         public double Voltage { get; set; }
         public double Current { get; set; }
+        public DateTime Timestamp { get; set; }
 
+        public NewDataReadEventArgs(double voltage, double current)
+        {
+            Voltage = voltage;
+            Current = current;
+            Timestamp = DateTime.UtcNow;
+        }
+    }
+    public class NewSignalEventArgs : EventArgs
+    {
         public double PowerSetting { get; set; }
         public double AlarmStatus { get; set; }
-        public bool IsDoorClosed { get; set; }= false;
+        public bool IsDoorClosed { get; set; } = false;
         public bool IsDoorOpened { get; set; } = false;
         public bool IsReady { get; set; } = false;
         public bool IsRunning { get; set; } = false;
@@ -18,12 +28,8 @@ namespace Flasma_IOT_01.Core.Models
         public bool IsStart { get; set; } = false;
         public bool IsStopped { get; set; } = false;
 
-        public DateTime Timestamp { get; set; }
-
-        public NewDataReadEventArgs(double voltage, double current, double powerSetting, double alarmStatus, bool isDoorClosed, bool isDoorOpened, bool isReady, bool isRunning, bool isStopped)
+        public NewSignalEventArgs(double powerSetting, double alarmStatus, bool isDoorClosed, bool isDoorOpened, bool isReady, bool isRunning, bool isStart, bool isStopped)
         {
-            Voltage = voltage;
-            Current = current;
             PowerSetting = powerSetting;
             AlarmStatus = alarmStatus;
             IsDoorClosed = isDoorClosed;
@@ -31,7 +37,7 @@ namespace Flasma_IOT_01.Core.Models
             IsReady = isReady;
             IsRunning = isRunning;
             IsStopped = isStopped;
-            Timestamp = DateTime.UtcNow;
+            IsStart = isStart;
         }
     }
 }
