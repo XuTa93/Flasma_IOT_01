@@ -305,8 +305,8 @@ namespace Flasma_IOT_01.ViewModels
 			// Thực hiện hành động khi nút được nhấn
 			var settings = new ModbusConnectionSettings
 			{
-				IpAddress = "127.0.0.1",
-				Port = 502,
+				IpAddress = "192.168.1.13",
+				Port = 505,
 				VoltageRegisterAddress = 3,
 				CurrentRegisterAddress = 4,
 				PowerRegisterAddress = 5,
@@ -502,9 +502,13 @@ namespace Flasma_IOT_01.ViewModels
         }
         private void OnMeasurementNewDataRead(object? sender, NewDataReadEventArgs e)
 		{
-			// Update UI labels
-			Voltage = $"{e.Voltage:F2}";
-			Current = $"{e.Current:F2}";
+			// ================= SCALE DATA =================
+			double voltageScaled = e.Voltage / 10.0;     // VD: 3250 -> 325.0V
+			double currentScaled = e.Current / 1000.0;   // VD: 2350 -> 2.350A
+
+			// ================= UI TEXT ====================
+			Voltage = voltageScaled.ToString("F1");  // 1 số sau dấu chấm
+			Current = currentScaled.ToString("F3");  // 3 số sau dấu chấm
 
 
 			// Chỉ vẽ chart khi đang recording (từ Start đến Stop)
