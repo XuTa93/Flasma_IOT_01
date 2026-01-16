@@ -490,9 +490,15 @@ namespace Flasma_IOT_01.ViewModels
 			if (CoilStop && _isRecording)
 			{
 				OnButtonStopPressed();
-            }
+			}
+			else if (!e.IsRunning && e.IsReady && _isRecording)
+			{
+				// Kiểm tra nếu running tắt và ready = true
+				// Đây là trường hợp kết thúc bình thường
+				OnButtonStopPressed();
+			}
 
-            UpdateAlarmStatus((int)e.AlarmStatus);
+				UpdateAlarmStatus((int)e.AlarmStatus);
 
             // Sửa thành AlarmStatus (thay vì Alarm)
             Alarm = e.AlarmStatus; // <-- SỬA TỪ e.Alarm THÀNH e.AlarmStatus

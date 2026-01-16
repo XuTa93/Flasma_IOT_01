@@ -239,27 +239,33 @@ public class MeasurementController
         }
     }
 
-    /// <summary>
-    /// Stop collecting measurement data
-    /// </summary>
-    public async Task StopMeasurementAsync()
-    {
-        try
-        {
-            _isRunning = false;
-            MeasurementStopped?.Invoke(this, EventArgs.Empty);
-        }
-        catch (Exception ex)
-        {
-            ErrorOccurred?.Invoke(this, ex.Message);
-            throw;
-        }
-    }
+	/// <summary>
+	/// Stop collecting measurement data
+	/// </summary>
+	/// <summary>
+	/// Stop collecting measurement data
+	/// </summary>
+	public async Task StopMeasurementAsync()
+	{
+		try
+		{
+			_isRunning = false;
+			MeasurementStopped?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>
-    /// Background loop that continuously reads from Modbus
-    /// </summary>
-    private async Task BackgroundReadLoopAsync(CancellationToken cancellationToken)
+			// Lưu trạng thái coil tại thời điểm dừng
+			// (các giá trị _lastCoil* đã được cập nhật trong background loop)
+		}
+		catch (Exception ex)
+		{
+			ErrorOccurred?.Invoke(this, ex.Message);
+			throw;
+		}
+	}
+
+	/// <summary>
+	/// Background loop that continuously reads from Modbus
+	/// </summary>
+	private async Task BackgroundReadLoopAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -454,39 +460,70 @@ public class MeasurementController
         await _reportExporter.ExportToCsvAsync(filePath, measurements);
     }
 
-    /// <summary>
-    /// Create a history record for the measurement
-    /// </summary>
-    public async Task<MeasurementHistory> CreateHistoryRecordAsync(string barcode, string csvFilePath)
-    {
-        var measurements = _dataRepository.GetAllMeasurements().ToList();
-        var endTime = DateTime.Now;
-        
-        // Calculate statistics
-        var avgVoltage = measurements.Any() ? measurements.Average(m => m.Voltage) : 0;
-        var avgCurrent = measurements.Any() ? measurements.Average(m => m.Current) : 0;
-        
-        // TODO: Implement actual OK/NG logic based on chart analysis
-        // For now, use random as placeholder
-        var random = new Random();
-        var result = random.Next(0, 2) == 0 ? "OK" : "NG";
-        
-        var history = new MeasurementHistory(
-            _measurementStartTime,
-            endTime,
-            barcode,
-            result,
-            measurements.Count,
-            avgVoltage,
-            avgCurrent,
-            csvFilePath
-        );
-        
-        await _historyRepository.AddHistoryAsync(history);
-        return history;
-    }
+	/// <summary>
+	/// Create a history record for the measurement
+	/// </summary>
+	/// <summary>
+	/// Create a history record for the measurement
+	/// </summary>
+	public async Task<MeasurementHistory> CreateHistoryRecordAsync(string barcode, string csvFilePath)
+	{
+		var measurements = _dataRepository.GetAllMeasurements().ToList();
+		var endTime = DateTime.Now;
 
-    public IEnumerable<MeasurementHistory> GetAllHistory()
+		// Calculate statistics
+		var avgVoltage = measurements.Any() ? measurements.Average(m => m.Voltage) : 0;
+		var avgCurrent = measurements.Any() ? measurements.Average(m => m.Current) : 0;
+
+		// Logic xác định OK/NG dựa trên trạng thái coil
+		string result;
+
+		if (_isRunning)
+		{
+			// Trường hợp đang recording mà bị ngắt bởi Stop
+			if (_lastCoilStopped && !_lastCoilReady)
+			{
+				result = "NG"; // Đang running mà stop=true (không có ready)
+			}
+			else if (!_lastCoilRunning && _lastCoilReady)
+			{
+				result = "OK"; // Running tắt và ready=true
+			}
+			else
+			{
+				// Trường hợp khác hoặc không xác định được
+				result = "NG";
+			}
+		}
+		else
+		{
+			// Nếu không phải đang running
+			if (_lastCoilReady && !_lastCoilStopped)
+			{
+				result = "OK";
+			}
+			else
+			{
+				result = "NG";
+			}
+		}
+
+		var history = new MeasurementHistory(
+			_measurementStartTime,
+			endTime,
+			barcode,
+			result,
+			measurements.Count,
+			avgVoltage,
+			avgCurrent,
+			csvFilePath
+		);
+
+		await _historyRepository.AddHistoryAsync(history);
+		return history;
+	}
+
+	public IEnumerable<MeasurementHistory> GetAllHistory()
     {
         return _historyRepository.GetAllHistory();
     }
