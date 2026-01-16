@@ -515,8 +515,8 @@ namespace Flasma_IOT_01.ViewModels
 			if (_isRecording)
 			{
 				// Thêm dữ liệu mới vào chart
-				_voltageValues.Add(e.Voltage);
-				_currentValues.Add(e.Current);
+				_voltageValues.Add(voltageScaled);
+				_currentValues.Add(currentScaled);
 
 				// Cập nhật trục X để hiển thị toàn bộ dữ liệu
 				VoltageXAxes[0].MinLimit = 0;
