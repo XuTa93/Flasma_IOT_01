@@ -53,76 +53,82 @@
 </TabItem>
 
             <!-- ================= CHART TAB ================= -->
-            <TabItem Header="Chart">
-                <!-- Gi? nguyên ph?n Chart -->
-                <Border Background="#1A1A1A"
-                        Padding="20">
-                    <Grid RowDefinitions="*,*"
-                          RowSpacing="10">
-            
-                        <!-- VOLTAGE CHART -->
-                        <Border Grid.Row="0"
-                                Background="#1A1A1A"
-                                BorderBrush="#444"
-                                BorderThickness="1"
-                                Padding="5,10,5,5">
-                            <Grid RowDefinitions="Auto,*">
-                                <TextBlock Grid.Row="0"
-                                           Text="Voltage (V)"
-                                           Foreground="White"
-                                           FontSize="16"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,0,0,5"/>
-                                <!-- VOLTAGE CHART -->
-                                <lvc:CartesianChart Grid.Row="1"
-                                                    Series="{Binding VoltageSeries}"
-                                                    XAxes="{Binding VoltageXAxes}"
-                                                    YAxes="{Binding VoltageYAxes}"
-                                                    LegendPosition="Hidden"
-                                                    Background="#1A1A1A">
-                                    <lvc:CartesianChart.Styles>
-                                        <Style Selector="TextBlock">
-                                            <Setter Property="FontSize" Value="12"/>
-                                        </Style>
-                                    </lvc:CartesianChart.Styles>
-                                </lvc:CartesianChart>
-                            </Grid>
-                        </Border>
+<TabItem Header="Chart">
+    <Border Background="#1A1A1A"
+            Padding="20">
 
-                        <!-- CURRENT CHART -->
-                        <Border Grid.Row="1"
-                                Background="#1A1A1A"
-                                BorderBrush="#444"
-                                BorderThickness="1"
-                                Padding="5,10,5,5">
-                            <Grid RowDefinitions="Auto,*">
-                                <TextBlock Grid.Row="0"
-                                           Text="Current (A)"
-                                           Foreground="White"
-                                           FontSize="16"
-                                           FontWeight="Bold"
-                                           HorizontalAlignment="Center"
-                                           Margin="0,0,0,5"/>
-                                <!-- CURRENT CHART -->
-                                <lvc:CartesianChart Grid.Row="1"
-                                                    Series="{Binding CurrentSeries}"
-                                                    XAxes="{Binding CurrentXAxes}"
-                                                    YAxes="{Binding CurrentYAxes}"
-                                                    LegendPosition="Hidden"
-                                                    Background="#1A1A1A">
-                                    <lvc:CartesianChart.Styles>
-                                        <Style Selector="TextBlock">
-                                            <Setter Property="FontSize" Value="12"/>
-                                        </Style>
-                                    </lvc:CartesianChart.Styles>
-                                </lvc:CartesianChart>
-                            </Grid>
-                        </Border>
+        <!-- CHIA MÀN HÌNH LÀM 2 C?T -->
+        <Grid ColumnDefinitions="*,*">
 
+            <!-- ===== LEFT AREA: CHARTS (50%) ===== -->
+            <Grid Grid.Column="0"
+                  RowDefinitions="*,*"
+                  RowSpacing="10">
+
+                <!-- VOLTAGE CHART -->
+                <Border Grid.Row="0"
+                        Background="#1A1A1A"
+                        BorderBrush="#444"
+                        BorderThickness="1"
+                        Padding="5,10,5,5">
+
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0"
+                                   Text="Voltage (V)"
+                                   Foreground="White"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,5"/>
+
+                        <lvc:CartesianChart Grid.Row="1"
+                                            Series="{Binding VoltageSeries}"
+                                            XAxes="{Binding VoltageXAxes}"
+                                            YAxes="{Binding VoltageYAxes}"
+                                            LegendPosition="Hidden"
+                                            Background="#1A1A1A"/>
                     </Grid>
                 </Border>
-            </TabItem>
+
+                <!-- CURRENT CHART -->
+                <Border Grid.Row="1"
+                        Background="#1A1A1A"
+                        BorderBrush="#444"
+                        BorderThickness="1"
+                        Padding="5,10,5,5">
+
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Grid.Row="0"
+                                   Text="Current (A)"
+                                   Foreground="White"
+                                   FontSize="16"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,5"/>
+
+                        <lvc:CartesianChart Grid.Row="1"
+                                            Series="{Binding CurrentSeries}"
+                                            XAxes="{Binding CurrentXAxes}"
+                                            YAxes="{Binding CurrentYAxes}"
+                                            LegendPosition="Hidden"
+                                            Background="#1A1A1A"/>
+                    </Grid>
+                </Border>
+
+            </Grid>
+
+            <!-- ===== RIGHT AREA: EMPTY (50%) ===== -->
+            <Border Grid.Column="1"
+                    Background="#111"
+                    BorderBrush="#333"
+                    BorderThickness="1"
+                    CornerRadius="4">
+                <!-- Sau này ?? info / stats / alarm summary -->
+            </Border>
+
+        </Grid>
+    </Border>
+</TabItem>
 
             <!-- ================= ALARM TAB ================= -->
 <!-- ================= ALARM TAB ================= -->
