@@ -24,28 +24,60 @@
           <TabItem Header="History">
     <Grid RowDefinitions="*">
 
-        <dataGrid:DataGrid
-            x:CompileBindings="False"
-            ItemsSource="{Binding HistoryRecords}"
-            AutoGenerateColumns="False"
-            HeadersVisibility="Column"
-            GridLinesVisibility="All"
-            BorderThickness="1"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch"
-            ColumnWidth="Auto">
+<dataGrid:DataGrid
+    ItemsSource="{Binding HistoryRecords}"
+    AutoGenerateColumns="False"
+    HeadersVisibility="Column"
+    GridLinesVisibility="All"
+    BorderThickness="1"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    ColumnWidth="*"
+    CanUserResizeColumns="True"
+    HorizontalScrollBarVisibility="Disabled"
+    VerticalScrollBarVisibility="Auto">
 
-            <dataGrid:DataGrid.Columns>
-                <dataGrid:DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80"/>
-                <dataGrid:DataGridTextColumn Header="Start Time" Binding="{Binding StartTime}" Width="150"/>
-                <dataGrid:DataGridTextColumn Header="End Time" Binding="{Binding EndTime}" Width="150"/>
-                <dataGrid:DataGridTextColumn Header="Duration" Binding="{Binding Duration}" Width="120"/>
-                <dataGrid:DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="150"/>
-                <dataGrid:DataGridTextColumn Header="Result" Binding="{Binding Result}" Width="100"/>
-                <dataGrid:DataGridTextColumn Header="Avg Voltage" Binding="{Binding AvgVoltage}" Width="130"/>
-                <dataGrid:DataGridTextColumn Header="Avg Current" Binding="{Binding AvgCurrent}" Width="100"/>
-                <dataGrid:DataGridTextColumn Header="File Path" Binding="{Binding FilePath}" Width="300"/>
-            </dataGrid:DataGrid.Columns>
+<dataGrid:DataGrid.Columns>
+
+    <dataGrid:DataGridTextColumn Header="ID"
+                                 Binding="{Binding Id}"
+                                 Width="Auto"/>
+
+    <dataGrid:DataGridTextColumn Header="Start Time"
+                                 Binding="{Binding StartTime}"
+                                 Width="*"/>
+
+    <dataGrid:DataGridTextColumn Header="End Time"
+                                 Binding="{Binding EndTime}"
+                                 Width="*"/>
+
+    <dataGrid:DataGridTextColumn Header="Duration"
+                                 Binding="{Binding Duration}"
+                                 Width="Auto"/>
+
+    <dataGrid:DataGridTextColumn Header="Barcode"
+                                 Binding="{Binding Barcode}"
+                                 Width="*"/>
+
+    <dataGrid:DataGridTextColumn Header="Result"
+                                 Binding="{Binding Result}"
+                                 Width="Auto"/>
+
+    <dataGrid:DataGridTextColumn Header="Avg Voltage"
+                                 Binding="{Binding AvgVoltage}"
+                                 Width="*"/>
+
+    <dataGrid:DataGridTextColumn Header="Avg Current"
+                                 Binding="{Binding AvgCurrent}"
+                                 Width="*"/>
+
+    <!-- C?T DÀI NH?T -->
+    <dataGrid:DataGridTextColumn Header="File Path"
+                                 Binding="{Binding FilePath}"
+                                 Width="2*"/>
+
+</dataGrid:DataGrid.Columns>
+
 
         </dataGrid:DataGrid>
 
@@ -122,9 +154,70 @@
                     Background="#111"
                     BorderBrush="#333"
                     BorderThickness="1"
-                    CornerRadius="4">
-                <!-- Sau này ?? info / stats / alarm summary -->
+                    CornerRadius="6"
+                    Padding="12">
+
+                <StackPanel Spacing="12">
+
+                    <!-- ===== DATE PICKER ===== -->
+                    <TextBlock Text="Select date"
+                               Foreground="White"
+                               FontSize="14"
+                               FontWeight="Bold"/>
+
+                    <CalendarDatePicker
+                        SelectedDate="{Binding SelectedSummaryDate, Mode=TwoWay}"
+                        DisplayDateEnd="{Binding Today}"
+                        HorizontalAlignment="Stretch"/>
+
+                    <!-- ===== DONUT CHART ===== -->
+                    <Grid Height="260">
+
+                        <lvc:PieChart
+                            Series="{Binding SummarySeries}"
+                            LegendPosition="Hidden"
+                            InitialRotation="-90"
+                            Background="Transparent"/>
+
+                        <!-- CENTER TEXT -->
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="TOTAL"
+                                       Foreground="#AAA"
+                                       FontSize="14"
+                                       HorizontalAlignment="Center"/>
+
+                            <TextBlock Text="{Binding TotalCount}"
+                                       Foreground="White"
+                                       FontSize="28"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                    </Grid>
+
+                    <!-- ===== LEGEND ===== -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Spacing="20">
+
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="10" Height="10" Fill="Lime"/>
+                            <TextBlock Text="{Binding OkCountLabel}"
+                                       Foreground="White"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="10" Height="10" Fill="Red"/>
+                            <TextBlock Text="{Binding NgCountLabel}"
+                                       Foreground="White"/>
+                        </StackPanel>
+
+                    </StackPanel>
+
+                </StackPanel>
             </Border>
+
 
         </Grid>
     </Border>
@@ -135,36 +228,48 @@
 <TabItem Header="Alarm">
     <Grid RowDefinitions="*">
         
-        <dataGrid:DataGrid
-            x:CompileBindings="False"
-            ItemsSource="{Binding AlarmRecords}"
-            AutoGenerateColumns="False"
-            HeadersVisibility="Column"
-            GridLinesVisibility="All"
-            BorderThickness="1"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Stretch"
-            ColumnWidth="*">
+<dataGrid:DataGrid
+    ItemsSource="{Binding AlarmRecords}"
+    AutoGenerateColumns="False"
+    HeadersVisibility="Column"
+    GridLinesVisibility="All"
+    BorderThickness="1"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch"
+    ColumnWidth="*"
+    CanUserResizeColumns="True"
+    HorizontalScrollBarVisibility="Disabled"
+    VerticalScrollBarVisibility="Auto">
 
-            <dataGrid:DataGrid.Columns>
-                <dataGrid:DataGridTextColumn Header="No." Binding="{Binding No}" Width="80"/>
-                <dataGrid:DataGridTextColumn Header="Name Alarm" Binding="{Binding NameAlarm}" Width="*"/>
-                
-                <!-- Status Column with Template -->
-                <dataGrid:DataGridTemplateColumn Header="Status" Width="150">
-                    <dataGrid:DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Status}" 
-                                       Foreground="{Binding StatusColor}"
-                                       FontWeight="{Binding StatusFontWeight}"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Center"/>
-                        </DataTemplate>
-                    </dataGrid:DataGridTemplateColumn.CellTemplate>
-                </dataGrid:DataGridTemplateColumn>
-                
-                <dataGrid:DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="180"/>
-            </dataGrid:DataGrid.Columns>
+<dataGrid:DataGrid.Columns>
+
+    <dataGrid:DataGridTextColumn Header="No."
+                                 Binding="{Binding No}"
+                                 Width="Auto"/>
+
+    <dataGrid:DataGridTextColumn Header="Name Alarm"
+                                 Binding="{Binding NameAlarm}"
+                                 Width="2*"/>
+
+    <!-- STATUS -->
+    <dataGrid:DataGridTemplateColumn Header="Status"
+                                     Width="*">
+        <dataGrid:DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+                <TextBlock Text="{Binding Status}"
+                           Foreground="{Binding StatusColor}"
+                           FontWeight="{Binding StatusFontWeight}"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"/>
+            </DataTemplate>
+        </dataGrid:DataGridTemplateColumn.CellTemplate>
+    </dataGrid:DataGridTemplateColumn>
+
+    <dataGrid:DataGridTextColumn Header="Time"
+                                 Binding="{Binding Timestamp}"
+                                 Width="*"/>
+
+</dataGrid:DataGrid.Columns>
 
         </dataGrid:DataGrid>
 
@@ -225,9 +330,24 @@
                </StackPanel>
 
                 <StackPanel Grid.Column="1" Grid.Row="1" 
-                            Orientation="Horizontal"
-                            Spacing="5"
-                        HorizontalAlignment="Right">
+                                Orientation="Horizontal"
+                                Spacing="5"
+                                HorizontalAlignment="Right"
+                                Margin="0,0,40,0">
+                        <!-- ===== REAL TIME CLOCK (THÊM M?I) ===== -->
+                <Border BorderBrush="#555"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="8"
+                        Background="#1F1F1F"
+                        VerticalAlignment="Center">
+
+                    <TextBlock Text="{Binding CurrentDateTime}"
+                               x:CompileBindings="False"
+                               Foreground="#DDD"
+                               FontSize="14"
+                               FontWeight="SemiBold"/>
+                </Border>
                                                     <!-- ===== RESULT SUMMARY ===== -->
                 <Border BorderBrush="#555"
                         BorderThickness="1"

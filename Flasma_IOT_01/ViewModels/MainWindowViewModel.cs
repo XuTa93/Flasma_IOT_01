@@ -118,6 +118,26 @@ namespace Flasma_IOT_01.ViewModels
 		private readonly ObservableCollection<double> _voltageValues = new();
 		private readonly ObservableCollection<double> _currentValues = new();
 
+		[ObservableProperty]
+		private DateTime? selectedSummaryDate;
+
+		public DateTime Today => DateTime.Today;
+		[ObservableProperty]
+		private ISeries[] summarySeries = Array.Empty<ISeries>();
+
+		[ObservableProperty]
+		private int totalCount;
+
+		[ObservableProperty]
+		private string okCountLabel = "OK: 0";
+
+		[ObservableProperty]
+		private string ngCountLabel = "NG: 0";
+
+		[ObservableProperty]
+		private string currentDateTime = "";
+
+
 		public MainWindowViewModel()
 		{
 			_modbusClient = new ModbusTcpClient();
@@ -142,6 +162,16 @@ namespace Flasma_IOT_01.ViewModels
 
 			if (Design.IsDesignMode)
 				return;
+			var timer = new System.Timers.Timer(1000);
+			timer.Elapsed += (_, _) =>
+			{
+				CurrentDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+			};
+			timer.AutoReset = true;
+			timer.Start();
+
+			CurrentDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
 
 			// ================= VOLTAGE =================
 			VoltageSeries = new ISeries[]
@@ -234,6 +264,7 @@ namespace Flasma_IOT_01.ViewModels
 					ShowSeparatorLines = true
 				}
 			};
+
 		}
 
 		private void OnMeasurementConnectionStatusChanged(object? sender, bool e)
@@ -460,7 +491,6 @@ namespace Flasma_IOT_01.ViewModels
 					FilePath = Path.GetFileName(h.FilePath)
 				});
 
-				// Đếm OK / NG
 				if (h.Result.Equals("OK", StringComparison.OrdinalIgnoreCase))
 					ok++;
 				else
@@ -469,9 +499,16 @@ namespace Flasma_IOT_01.ViewModels
 
 			OkCount = ok;
 			NgCount = ng;
+
+			// ⭐ AUTO UPDATE DONUT IF VIEWING TODAY
+			if (SelectedSummaryDate?.Date == DateTime.Today)
+			{
+				LoadDailySummary(DateTime.Today);
+			}
 		}
-        
-        private void OnNewSignalReceived(object? sender, NewSignalEventArgs e)
+
+
+		private void OnNewSignalReceived(object? sender, NewSignalEventArgs e)
 		{
 
             // Cập nhật coil status với tên đúng
@@ -668,7 +705,43 @@ namespace Flasma_IOT_01.ViewModels
 				Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
 			});
 		}
+		private void LoadDailySummary(DateTime date)
+		{
+			var histories = _measurementController
+				.GetAllHistory()
+				.Where(h => h.StartTime.Date == date)
+				.ToList();
 
+			int ok = histories.Count(h => h.Result == "OK");
+			int ng = histories.Count(h => h.Result != "OK");
+
+			TotalCount = ok + ng;
+			OkCountLabel = $"OK: {ok}";
+			NgCountLabel = $"NG: {ng}";
+
+			SummarySeries = new ISeries[]
+			{
+		new PieSeries<int>
+		{
+			Values = new[] { ok },
+			Fill = new SolidColorPaint(SKColors.Lime),
+			InnerRadius = 60
+		},
+		new PieSeries<int>
+		{
+			Values = new[] { ng },
+			Fill = new SolidColorPaint(SKColors.Red),
+			InnerRadius = 60
+		}
+			};
+		}
+		partial void OnSelectedSummaryDateChanged(DateTime? value)
+		{
+			if (value == null)
+				return;
+
+			LoadDailySummary(value.Value.Date);
+		}
 
 	}
 
