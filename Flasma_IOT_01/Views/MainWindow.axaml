@@ -63,6 +63,10 @@
                                  Binding="{Binding Result}"
                                  Width="Auto"/>
 
+    <dataGrid:DataGridTextColumn Header="NG Content"
+                             Binding="{Binding NgContent}"
+                             Width="2*"/>
+
     <dataGrid:DataGridTextColumn Header="Avg Voltage"
                                  Binding="{Binding AvgVoltage}"
                                  Width="*"/>
@@ -71,6 +75,9 @@
                                  Binding="{Binding AvgCurrent}"
                                  Width="*"/>
 
+    <dataGrid:DataGridTextColumn Header="Avg Power"
+                                 Binding="{Binding AvgPower}"
+                                 Width="*"/>
     <!-- C?T DÀI NH?T -->
     <dataGrid:DataGridTextColumn Header="File Path"
                                  Binding="{Binding FilePath}"
@@ -174,10 +181,10 @@
                     <Grid Height="260">
 
                         <lvc:PieChart
-                            Series="{Binding SummarySeries}"
-                            LegendPosition="Hidden"
-                            InitialRotation="-90"
-                            Background="Transparent"/>
+                                    Series="{Binding SummarySeries}"
+                                    LegendPosition="Hidden"
+                                    InitialRotation="-90"
+                                    Background="Black"/>
 
                         <!-- CENTER TEXT -->
                         <StackPanel HorizontalAlignment="Center"
@@ -195,6 +202,77 @@
                         </StackPanel>
 
                     </Grid>
+                    <dataGrid:DataGrid
+                        ItemsSource="{Binding Last5DaysSummary}"
+                        AutoGenerateColumns="False"
+                        HeadersVisibility="Column"
+                        GridLinesVisibility="Horizontal"
+                        Height="280"
+                        Margin="0,10,0,0"
+                        HorizontalAlignment="Stretch"
+                        Background="#1E1E1E"
+                        BorderBrush="#444"
+                        BorderThickness="1">
+
+                        <!-- ===== STYLES (CÁCH ?ÚNG AVALONIA) ===== -->
+                        <dataGrid:DataGrid.Styles>
+
+                            <!-- HEADER -->
+                            <Style Selector="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#CCCCCC"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="BorderBrush" Value="#444"/>
+                            </Style>
+
+                            <!-- ROW M?C ??NH -->
+                            <Style Selector="DataGridRow">
+                                <Setter Property="Background" Value="#1E1E1E"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Style>
+
+                            <!-- ROW CH?N (ALTERNATING) -->
+                            <Style Selector="DataGridRow:nth-child(even)">
+                                <Setter Property="Background" Value="#252525"/>
+                            </Style>
+
+                            <!-- CELL -->
+                            <Style Selector="DataGridCell">
+                                <Setter Property="BorderBrush" Value="#333"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+
+                        </dataGrid:DataGrid.Styles>
+
+                        <dataGrid:DataGrid.Columns>
+
+                            <dataGrid:DataGridTextColumn Header="Date"
+                                                         Binding="{Binding Label}"
+                                                         Width="80"/>
+
+                            <dataGrid:DataGridTextColumn Header="15/1/2026"
+                                                         Binding="{Binding Day1}"
+                                                         Width="*"/>
+
+                            <dataGrid:DataGridTextColumn Header="16/1/2026"
+                                                         Binding="{Binding Day2}"
+                                                         Width="*"/>
+
+                            <dataGrid:DataGridTextColumn Header="17/1/2026"
+                                                         Binding="{Binding Day3}"
+                                                         Width="*"/>
+
+                            <dataGrid:DataGridTextColumn Header="18/1/2026"
+                                                         Binding="{Binding Day4}"
+                                                         Width="*"/>
+
+                            <dataGrid:DataGridTextColumn Header="19/1/2026"
+                                                         Binding="{Binding Day5}"
+                                                         Width="*"/>
+
+                        </dataGrid:DataGrid.Columns>
+                    </dataGrid:DataGrid>
 
                     <!-- ===== LEGEND ===== -->
                     <StackPanel Orientation="Horizontal"
@@ -348,53 +426,7 @@
                                FontSize="14"
                                FontWeight="SemiBold"/>
                 </Border>
-                                                    <!-- ===== RESULT SUMMARY ===== -->
-                <Border BorderBrush="#555"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="8"
-                        Grid.Column="0"
-                        Background="#1F1F1F">
-
-                    <Grid ColumnDefinitions="Auto,Auto"
-                          ColumnSpacing="20"
-                          RowSpacing="6">
-
-                        <TextBlock Text="OK"
-                                   Foreground="Lime"
-                                   FontWeight="Bold"/>
-
-                        <TextBlock Grid.Column="1"
-                                   MinWidth="50"
-                                   Text="{Binding OkCount}"
-                                   Foreground="Lime"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Right"/>
-                    </Grid>
-                </Border>
-                <Border BorderBrush="#555"
-                        BorderThickness="1"
-                        CornerRadius="4"
-                        Padding="8"
-                        Grid.Column="1"
-                        Background="#1F1F1F">
-
-                    <Grid ColumnDefinitions="Auto,Auto"
-                          ColumnSpacing="20"
-                          RowSpacing="6">
-                        <TextBlock Grid.Column="0"
-                                   Text="NG"
-                                   Foreground="Red"
-                                   FontWeight="Bold"/>
-
-                        <TextBlock Grid.Column="1"
-                                   MinWidth="50"
-                                   Text="{Binding NgCount}"
-                                   Foreground="Red"
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Right"/>
-                    </Grid>
-                </Border>
+                                           
                     </StackPanel>
 
         </Grid>

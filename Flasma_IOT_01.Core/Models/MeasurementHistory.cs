@@ -16,8 +16,8 @@ public class MeasurementHistory
     public double AverageVoltage { get; set; }
     public double AverageCurrent { get; set; }
     public string FilePath { get; set; } = string.Empty;
-
-    public TimeSpan Duration => EndTime - StartTime;
+	public string NgContent { get; set; } = "";
+	public TimeSpan Duration => EndTime - StartTime;
 
     public MeasurementHistory()
     {

@@ -1,22 +1,28 @@
 ﻿using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Flasma_IOT_01.Core.Controllers;
 using Flasma_IOT_01.Core.Models;
 using Flasma_IOT_01.Core.Services;
+using Flasma_IOT_01.Views;
 using LiveChartsCore;
+using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
-using LiveChartsCore.Defaults;
 using MsBox.Avalonia;
+using MsBox.Avalonia.Dto;
 using MsBox.Avalonia.Enums;
+using MsBox.Avalonia.Models;
 using SkiaSharp;
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia;
 
 namespace Flasma_IOT_01.ViewModels
 {
@@ -97,6 +103,10 @@ namespace Flasma_IOT_01.ViewModels
 		[ObservableProperty]
 		private int ngCount;
 
+		[ObservableProperty]
+		private ObservableCollection<DailySummaryRow> last5DaysSummary = new();
+
+
 		private bool _startMeasurering = false;
 
         [ObservableProperty]
@@ -159,6 +169,9 @@ namespace Flasma_IOT_01.ViewModels
 			_measurementController.MeasurementStarted += OnMeasurementMeasurementStarted;
 			_measurementController.MeasurementStopped += OnMeasurementMeasurementStopped;
 			_measurementController.ConnectionStatusChanged += OnMeasurementConnectionStatusChanged;
+			// 🔥 INIT bảng 5 ngày rỗng (NG / OK / TOTAL = 0)
+			InitEmptyLast5DaysSummary(DateTime.Today);
+
 
 			if (Design.IsDesignMode)
 				return;
@@ -179,7 +192,9 @@ namespace Flasma_IOT_01.ViewModels
 				new LineSeries<double>
 				{
 					Values = _voltageValues,
-					GeometrySize = 0,
+					GeometrySize = 0,          // ❌ không vẽ chấm
+					GeometryStroke = null,     // ❌ không viền chấm
+					GeometryFill = null,       // ❌ không tô chấm
 					Stroke = new SolidColorPaint(SKColors.Lime, 2),
 					Fill = null
 				}
@@ -225,7 +240,9 @@ namespace Flasma_IOT_01.ViewModels
 				new LineSeries<double>
 				{
 					Values = _currentValues,
-					GeometrySize = 0,
+					GeometrySize = 0,          // ❌ không vẽ chấm
+					GeometryStroke = null,     // ❌ không viền chấm
+					GeometryFill = null,       // ❌ không tô chấm
 					Stroke = new SolidColorPaint(SKColors.Cyan, 2),
 					Fill = null
 				}
@@ -336,8 +353,8 @@ namespace Flasma_IOT_01.ViewModels
 			// Thực hiện hành động khi nút được nhấn
 			var settings = new ModbusConnectionSettings
 			{
-				IpAddress = "192.168.1.13",
-				Port = 505,
+				IpAddress = "127.0.0.1",
+				Port = 502,
 				VoltageRegisterAddress = 3,
 				CurrentRegisterAddress = 4,
 				PowerRegisterAddress = 5,
@@ -441,6 +458,14 @@ namespace Flasma_IOT_01.ViewModels
 				var barcode = string.IsNullOrWhiteSpace(BarcodeText) ? "N/A" : BarcodeText.Trim();
 				var history = await _measurementController.CreateHistoryRecordAsync(barcode, filePath);
 
+				// ✅ NẾU NG → HỎI NG CONTENT
+				if (history.Result.Equals("NG", StringComparison.OrdinalIgnoreCase))
+				{
+					var ngContent = await AskNgContentAsync();
+					history.NgContent = ngContent ?? "";
+				}
+
+
 				// Refresh history grid
 				RefreshHistoryGrid();
 
@@ -467,6 +492,20 @@ namespace Flasma_IOT_01.ViewModels
 				await box.ShowAsync();
 			}
 		}
+		// ================= NG CONTENT INPUT =================
+		private async Task<string?> AskNgContentAsync()
+		{
+			var win = new NgContentWindow();
+
+			var owner = (Application.Current?.ApplicationLifetime
+				as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
+
+			var result = await win.ShowDialog<bool>(owner);
+
+			return result ? win.Result : null;
+		}
+
+
 
 		private void RefreshHistoryGrid()
 		{
@@ -488,7 +527,8 @@ namespace Flasma_IOT_01.ViewModels
 					Result = h.Result,
 					AvgVoltage = h.AverageVoltage,
 					AvgCurrent = h.AverageCurrent,
-					FilePath = Path.GetFileName(h.FilePath)
+					FilePath = Path.GetFileName(h.FilePath),
+					NgContent = h.NgContent
 				});
 
 				if (h.Result.Equals("OK", StringComparison.OrdinalIgnoreCase))
@@ -645,66 +685,76 @@ namespace Flasma_IOT_01.ViewModels
 		}
 		private int _alarmStatus;
 
-		private void UpdateAlarmStatus(int alarmStatus)
+		private void UpdateAlarmStatus(int newStatus)
 		{
-			if (_alarmStatus == alarmStatus)
-				return;
+			int oldStatus = _alarmStatus;
+			_alarmStatus = newStatus;
 
-			_alarmStatus = alarmStatus;
-			AlarmRecords.Clear();
+			// Danh sách alarm & bit tương ứng
+			var alarmMap = new Dictionary<int, string>
+	{
+		{ 1, "Overcurrent" },
+		{ 2, "Overtemperature" },
+		{ 4, "Overvoltage" },
+		{ 8, "Undervoltage" },
+		{ 16, "Air Pressure" },
+		{ 32, "Open Circuit" },
+		{ 64, "IGBT1 Overcurrent" },
+		{ 128, "IGBT2 Overcurrent" },
+		{ 256, "Inverter overcurrent" },
+		{ 512, "No arcing alarm" },
+		{ 1024, "Motor non-rotation alarm" }
+	};
 
-			if (_alarmStatus == 0)
+			foreach (var alarm in alarmMap)
 			{
-				AlarmRecords.Add(new AlarmRecord
+				bool wasActive = (oldStatus & alarm.Key) != 0;
+				bool isActive = (newStatus & alarm.Key) != 0;
+
+				// ❗ LỖI MỚI
+				if (!wasActive && isActive)
 				{
-					No = 1,
-					NameAlarm = "No Alarm",
-					Status = "Đã hết lỗi",
-					StatusColor = "Lime",
-					StatusFontWeight = "Bold",
-					Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-				});
-				return;
+					AddAlarm(alarm.Value);
+				}
+
+				// ✅ LỖI ĐÃ HẾT
+				if (wasActive && !isActive)
+				{
+					FixAlarm(alarm.Value);
+				}
 			}
-
-			if ((_alarmStatus & 1) == 1)
-				AddAlarm("Overcurrent");
-
-			if ((_alarmStatus & 2) == 2)
-				AddAlarm("Overtemperature");
-
-			if ((_alarmStatus & 4) == 4)
-				AddAlarm("Overvoltage");
-			if ((_alarmStatus & 8) == 8)
-				AddAlarm("Undervoltage");
-			if ((_alarmStatus & 16) == 16)
-				AddAlarm ("Air Pressure");
-			if ((_alarmStatus & 32) == 32)
-				AddAlarm(("Open Circuit"));
-			if ((_alarmStatus & 64) == 64)
-				AddAlarm("IGBT1 Overcurrent ");
-			if ((_alarmStatus & 128) == 128)
-				AddAlarm("IGBT2 Overcurrent");
-			if ((_alarmStatus & 256) == 256)
-				AddAlarm("Inverter overcurrent");
-			if ((_alarmStatus & 512) == 512)
-				AddAlarm("No arcing alarm");
-			if ((_alarmStatus & 1024) == 1024)
-				AddAlarm("Motor non - rotation alarm");
 		}
+
 
 		private void AddAlarm(string name)
 		{
+			// Không add trùng alarm đang tồn tại
+			if (AlarmRecords.Any(a => a.NameAlarm == name && a.Status == "Faulty"))
+				return;
+
 			AlarmRecords.Add(new AlarmRecord
 			{
 				No = AlarmRecords.Count + 1,
 				NameAlarm = name,
-				Status = "Bị lỗi",
+				Status = "Faulty",
 				StatusColor = "Red",
 				StatusFontWeight = "Bold",
 				Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
 			});
 		}
+		private void FixAlarm(string name)
+		{
+			var alarm = AlarmRecords
+				.LastOrDefault(a => a.NameAlarm == name && a.Status == "Faulty");
+
+			if (alarm == null)
+				return;
+
+			alarm.Status = "Fixed";
+			alarm.StatusColor = "Lime";
+			alarm.Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+		}
+
 		private void LoadDailySummary(DateTime date)
 		{
 			var histories = _measurementController
@@ -743,6 +793,95 @@ namespace Flasma_IOT_01.ViewModels
 			LoadDailySummary(value.Value.Date);
 		}
 
+		private void LoadLast5DaysSummary(DateTime today)
+		{
+			Last5DaysSummary.Clear();
+
+			var dates = Enumerable.Range(0, 5)
+								  .Select(i => today.AddDays(-4 + i))
+								  .ToList();
+
+			int[] ok = new int[5];
+			int[] ng = new int[5];
+
+			var histories = _measurementController.GetAllHistory();
+
+			for (int i = 0; i < 5; i++)
+			{
+				var d = dates[i].Date;
+
+				var daily = histories.Where(h => h.StartTime.Date == d).ToList();
+
+				ok[i] = daily.Count(h => h.Result == "OK");
+				ng[i] = daily.Count(h => h.Result != "OK");
+			}
+
+			Last5DaysSummary.Add(new DailySummaryRow
+			{
+				Label = "NG",
+				Day1 = ng[0],
+				Day2 = ng[1],
+				Day3 = ng[2],
+				Day4 = ng[3],
+				Day5 = ng[4]
+			});
+
+			Last5DaysSummary.Add(new DailySummaryRow
+			{
+				Label = "OK",
+				Day1 = ok[0],
+				Day2 = ok[1],
+				Day3 = ok[2],
+				Day4 = ok[3],
+				Day5 = ok[4]
+			});
+
+			Last5DaysSummary.Add(new DailySummaryRow
+			{
+				Label = "TOTAL",
+				Day1 = ok[0] + ng[0],
+				Day2 = ok[1] + ng[1],
+				Day3 = ok[2] + ng[2],
+				Day4 = ok[3] + ng[3],
+				Day5 = ok[4] + ng[4]
+			});
+		}
+
+		private void InitEmptyLast5DaysSummary(DateTime today)
+		{
+			Last5DaysSummary.Clear();
+
+			Last5DaysSummary.Add(new DailySummaryRow
+			{
+				Label = "NG",
+				Day1 = 0,
+				Day2 = 0,
+				Day3 = 0,
+				Day4 = 0,
+				Day5 = 1
+			});
+
+			Last5DaysSummary.Add(new DailySummaryRow
+			{
+				Label = "OK",
+				Day1 = 0,
+				Day2 = 0,
+				Day3 = 0,
+				Day4 = 0,
+				Day5 = 1
+			});
+
+			Last5DaysSummary.Add(new DailySummaryRow
+			{
+				Label = "TOTAL",
+				Day1 = 0,
+				Day2 = 0,
+				Day3 = 0,
+				Day4 = 0,
+				Day5 = 2
+			});
+		}
+
 	}
 
 	public class AlarmRecord
@@ -765,7 +904,21 @@ namespace Flasma_IOT_01.ViewModels
 		public string Result { get; set; } = string.Empty;
 		public double AvgVoltage { get; set; }
 		public double AvgCurrent { get; set; }
+		// ✅ THÊM DÒNG NÀY
+		public double AvgPower => AvgVoltage * AvgCurrent;
 		public string FilePath { get; set; } = string.Empty;
+		// ✅ THÊM DÒNG NÀY
+		public string NgContent { get; set; } = "";
+	}
+	public class DailySummaryRow
+	{
+		public string Label { get; set; } = "";   // NG / OK / TOTAL
+
+		public int Day1 { get; set; }
+		public int Day2 { get; set; }
+		public int Day3 { get; set; }
+		public int Day4 { get; set; }
+		public int Day5 { get; set; }
 	}
 
 
